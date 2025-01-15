@@ -5,9 +5,8 @@ import {
     getAll,
     login,
     signup
-} from "../controllers/Customer.js"
+} from "../controllers/User.js"
 
-// const { auth } = require("../middlewares/auth")
 
 router.post("/login", login)
 router.post("/signup", signup)

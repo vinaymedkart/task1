@@ -3,12 +3,12 @@ const router = express.Router()
 import dotenv from "dotenv"; dotenv.config();
 import {auth} from '../middlewares/auth.js' 
 import {
-createTag,
-getAllTags  
-} from "../controllers/Tags.js"
+createCategory,
+getAllCategorys  
+} from "../controllers/Category.js"
 
 
-router.post("/create",auth, createTag)
-router.get("/getAll",auth, getAllTags)
+router.post("/create",auth, createCategory)
+router.get("/getAll",auth, getAllCategorys)
 
 export default router

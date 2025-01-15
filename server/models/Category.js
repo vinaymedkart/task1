@@ -1,16 +1,25 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../postgres/sequelize.js";
+// Category.js
+import { DataTypes, Model } from "sequelize";
 
-const Category = sequelize.define("Category", {
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,  
-    },
-    productIds: {
-        type: DataTypes.ARRAY(DataTypes.INTEGER), // Array of product IDs
-        allowNull: true
+class Category extends Model {
+    static initModel(sequelize) {
+        Category.init(
+            {
+                name: {
+                    type: DataTypes.STRING,
+                    allowNull: false,
+                },
+                isActive: {
+                    type: DataTypes.BOOLEAN,
+                    defaultValue: true,
+                },
+            },
+            {
+                sequelize,
+                modelName: "Category",
+            }
+        );
     }
-});
+}
 
 export default Category;

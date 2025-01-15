@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken"
 import dotenv from "dotenv"; dotenv.config();
 
-import Customer  from "../models/Customer.js";
+import User  from "../models/User.js";
 
 
 export const signup = async(req,res)=>{
@@ -15,7 +15,8 @@ export const signup = async(req,res)=>{
             email,
             password,
             confirmPassword,
-	
+			role
+			
         } = req.body
 		// console.log(req.body)
         if (
@@ -23,7 +24,8 @@ export const signup = async(req,res)=>{
 			!lastName ||
 			!email ||
 			!password ||
-			!confirmPassword 
+			!confirmPassword ||
+			!role
 			
 		) {
 			return res.status(403).send({
@@ -40,7 +42,7 @@ export const signup = async(req,res)=>{
 			});
 		}
 
-        const existingUser = await Customer.findOne({
+        const existingUser = await User.findOne({
 			where: { email }
 		});
 		
@@ -51,17 +53,20 @@ export const signup = async(req,res)=>{
 			});
 		}
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        const user = await Customer.create({
+		const dummy = {
 			firstName,
 			lastName,
 			email,
-			password: hashedPassword
+		}
+        const user = await User.create({
+			...dummy,
+			password: hashedPassword,
+			role
 		});
 
 		return res.status(200).json({
 			success: true,
-			user,
+			dummy,
 			message: "Successfully registered ",
 		});
 
@@ -85,7 +90,7 @@ export const login = async (req, res) => {
 			});
 		}
 		
-		const user = await Customer.findOne({
+		const user = await User.findOne({
 			where: { email }
 		});
 		
@@ -99,10 +104,13 @@ export const login = async (req, res) => {
 		}
 		
 		if (await bcrypt.compare(password, user.password)) {
+			const data={email: user.email,role: user.role};
+
+			const verifyData = await bcrypt.hash(JSON.stringify(data), 10);
 			const token = jwt.sign(
 				{ email: user.email, id: user._id},
 				process.env.JWT_SECRET,
-				{
+				{	
 					expiresIn: "1h",
 				}
 			);
@@ -117,6 +125,7 @@ export const login = async (req, res) => {
 			res.cookie("token", token, options).status(200).json({
 				success: true,
 				token,
+				verifyData,
 				message: `User Login Success`,
 			});
 		} else {
@@ -140,7 +149,7 @@ export const login = async (req, res) => {
 export const getAll = async (req, res) => { 
 	try {
 		
-		const users = await Customer.findAll();
+		const users = await User.findAll();
 		
 		return res.status(200).json({
 			success: true,

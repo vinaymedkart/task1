@@ -1,18 +1,17 @@
-const BASE_URL = process.env.REACT_APP_BACKEND_BASE_URL
+const BASE_URL ="http://localhost:8000/api/v1"
 
-// OWNER ENDPOINTS
-export const endpoints = {
-  SENDOTP_API:        BASE_URL + "/auth/sendotp",
+
+// AUTH ENDPOINTS
+export const AuthEndpoints = {
   SIGNUP_API:         BASE_URL + "/auth/signup",
   LOGIN_API:          BASE_URL + "/auth/login",
-  RESETPASSTOKEN_API: BASE_URL + "/auth/reset-password-token",
-  RESETPASSWORD_API:  BASE_URL + "/auth/reset-password",
+}
+// TAG ENDPOINTS
+export const TagEndpoints = {
+  GET_ALL_TAGS_API: `${BASE_URL}/tag/getAll`,
 }
 
-
-
-
-// CUSTOMER ENDPOINTS
-export const customerEndpoints = {
-  
+// CATEGORY ENDPOINTS
+export const CategoryEndpoints = {
+  GET_ALL_CATEGORYS_API: `${BASE_URL}/category/getAll`,
 }

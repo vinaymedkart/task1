@@ -1,50 +1,20 @@
 
 import { toast } from "react-hot-toast"
-import { setLoading, setToken } from "../../redux/slices/auth"
+import { setData, setLoading, setToken } from "../../redux/slices/auth"
 import  {apiConnector}  from "../apiconnector"
-import { endpoints } from "../apis"
+import { AuthEndpoints } from "../apis"
 
 const {
-    SENDOTP_API,
     SIGNUP_API,
     LOGIN_API,
-} = endpoints
+} = AuthEndpoints
 
-export function sendOtp(email, navigate) {
-    return async (dispatch) => {
-
-        console.log(email);
-
-        const toastId = toast.loading("Loading...")
-        dispatch(setLoading(true))
-        try {
-            const response = await apiConnector("POST", SENDOTP_API, {email})
-
-            console.log("SENDOTP API RESPONSE............", response)
-
-            // console.log(response.data.success)
-
-            if (!response.data.success) {
-                throw new Error("hello" + response.data.message)
-            }
-
-            toast.success("OTP Sent Successfully")
-            navigate("/verify-email")
-        } catch (error) {
-            console.log("SENDOTP API ERROR............", error)
-            toast.error("Could Not Send OTP")
-        }
-        dispatch(setLoading(false))
-        toast.dismiss(toastId)
-    }
-}
-
-
-export function signUp(signupData, otp, navigate) {
+export function signUp(signupData,  navigate) {
 
     return async (dispatch) => {
         const toastId = toast.loading("Loading...")
         dispatch(setLoading(true))
+        console.log(signupData)
         try {
             const {
                 firstName,
@@ -60,7 +30,7 @@ export function signUp(signupData, otp, navigate) {
                 email,  
                 password,
                 confirmPassword,
-                otp
+                role:"USER"
             })
 
             console.log("SIGNUP API RESPONSE............", response)
@@ -90,6 +60,7 @@ export function login(email, password, navigate) {
                 email,
                 password
             })
+            // console.log(response)
 
             console.log("LOGIN API RESPONSE............", response)
 
@@ -99,9 +70,11 @@ export function login(email, password, navigate) {
 
             toast.success("Login Successful")
             dispatch(setToken(response.data.token))
-
+            dispatch(setData(response.data.verifyData))
+            
             // console.log(response.data);
             localStorage.setItem("token", response.data.token)  
+            localStorage.setItem("data", response.data.verifyData)  
             
             navigate("/dashboard")
         } catch (error) {

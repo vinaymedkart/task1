@@ -1,29 +1,36 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../postgres/sequelize.js";
-import Customer from "./Customer.js";
+import { DataTypes, Model } from "sequelize";
 
-const Order = sequelize.define("Order", {
-   
-    customerId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: Customer,
-            key: "id",
-        },
-    },
-    totalAmount: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        validate: {
-            isFloat: true,
-            min: 0.01,
-        },
-    },
-    status: {
-        type: DataTypes.ENUM("Pending", "Confirmed"),
-        defaultValue: "Pending",
-    },
-});
+class Order extends Model {
+    static initModel(sequelize) {
+        Order.init(
+            {
+                UserId: {
+                    type: DataTypes.INTEGER,
+                    allowNull: false,
+                },
+                cartId: {
+                    type: DataTypes.INTEGER,
+                    allowNull: false,
+                },
+                totalAmount: {
+                    type: DataTypes.FLOAT,
+                    allowNull: false,
+                    validate: {
+                        isFloat: true,
+                        min: 0.01,
+                    },
+                },
+                status: {
+                    type: DataTypes.ENUM("Pending", "Confirmed", "Cancelled"),
+                    defaultValue: "Pending",
+                },
+            },
+            {
+                sequelize,
+                modelName: "Order",
+            }
+        );
+    }
+}
 
 export default Order;

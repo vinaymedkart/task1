@@ -3,11 +3,11 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
     cartData: {}, 
     loading: false,
-    customerToken: localStorage.getItem("customerToken") || null
+    userToken: localStorage.getItem("userToken") || null
 };
 
-const customerSlice = createSlice({
-    name: "customer",
+const userSlice = createSlice({
+    name: "user",
     initialState: initialState,
     reducers: {
         setData(state, action) {
@@ -54,5 +54,5 @@ const customerSlice = createSlice({
     },
 });
 
-export const { setData, addToCart, removeFromCart, setLoading } = customerSlice.actions;
-export default customerSlice.reducer;
+export const { setData, addToCart, removeFromCart, setLoading } = userSlice.actions;
+export default userSlice.reducer;

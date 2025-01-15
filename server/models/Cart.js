@@ -1,33 +1,32 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../postgres/sequelize.js";
-import Customer from "./Customer.js";
-import Product from "./Product.js";
+import { DataTypes, Model } from "sequelize";
 
-const Cart = sequelize.define("Cart", {
-    customerId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: Customer,
-            key: "id",
-        },
-    },
-    productId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: Product,
-            key: "id",
-        },
-    },
-    quantity: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        validate: {
-            isInt: true,
-            min: 1, // Minimum quantity is 1
-        },
-    },
-});
+class Cart extends Model {
+    static initModel(sequelize) {
+        Cart.init(
+            {
+                UserId: {
+                    type: DataTypes.INTEGER,
+                    allowNull: false,
+                },
+                productId: {
+                    type: DataTypes.INTEGER,
+                    allowNull: false,
+                },
+                quantity: {
+                    type: DataTypes.INTEGER,
+                    allowNull: false,
+                    validate: {
+                        isInt: true,
+                        min: 1,
+                    },
+                },
+            },
+            {
+                sequelize,
+                modelName: "Cart",
+            }
+        );
+    }
+}
 
 export default Cart;

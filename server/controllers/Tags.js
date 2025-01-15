@@ -1,8 +1,8 @@
-import Tag from '../models/Tags.js';
-import Product from '../models/Product.js';
+import {Tag} from '../models/index.js';
+import {Product} from '../models/index.js';
 
 export const createTag = async (req, res) => {
-    const { name, productIds } = req.body;
+    const { name, isActive } = req.body;
 
     try {
         
@@ -13,12 +13,9 @@ export const createTag = async (req, res) => {
         }
 
         // Create new tag
-        const newTag = await Tag.create({
-            name,
-            productIds,
-        });
+        const tag = await Tag.create({ name, isActive });
 
-        return res.status(201).json({ message: 'Tag created successfully', tag: newTag });
+        return res.status(201).json({ message: 'Tag created successfully', tag});
     
     } catch (error) {
         console.error(error);

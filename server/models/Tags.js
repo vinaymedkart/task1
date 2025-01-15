@@ -1,16 +1,30 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../postgres/sequelize.js";
+import { DataTypes, Model } from "sequelize";
 
-const Tag = sequelize.define("Tag", {
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true, 
-    },
-    productIds: {
-        type: DataTypes.ARRAY(DataTypes.INTEGER), 
-        allowNull: true, 
+class Tag extends Model {
+    static initModel(sequelize) {
+        Tag.init(
+            {
+                tagId: {
+                    type: DataTypes.INTEGER,
+                    autoIncrement: true,
+                    primaryKey: true,
+                },
+                name: {
+                    type: DataTypes.STRING,
+                    unique: true,
+                    allowNull: false,
+                },
+                isActive: {
+                    type: DataTypes.BOOLEAN,
+                    allowNull: false,
+                },
+            },
+            {
+                sequelize,
+                modelName: "Tag",
+            }
+        );
     }
-});
+}
 
 export default Tag;
