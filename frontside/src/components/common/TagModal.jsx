@@ -69,19 +69,7 @@ const TagModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500"
-                rows="3"
-                placeholder="Enter tag description"
-              />
-            </div>
+      
 
             {/* Active Status */}
             <div className="flex items-center">

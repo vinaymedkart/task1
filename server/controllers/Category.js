@@ -5,16 +5,14 @@ export const createCategory= async (req, res) => {
 
     try {
         
-        // Check if the tag already exists
         const existingCategory = await Category.findOne({ where: { name } });
         if (existingCategory) {
             return res.status(400).json({ message: 'Category already exists' });
         }
 
-        // Create new tag
         const category = await Category.create({ name, isActive });
 
-        return res.status(201).json({ message: 'Category created successfully', category});
+        return res.status(201).json({success:true, message: 'Category created successfully', category});
     
     } catch (error) {
         console.error(error);
@@ -29,10 +27,10 @@ export const getAllCategorys = async (req, res) => {
         const categorys = await Category.findAll();
         
         if (categorys.length === 0) {
-            return res.status(404).json({ message: 'No categorys found' });
+            return res.status(404).json({success:true, message: 'No categorys found' });
         }
 
-        return res.status(200).json(tags);
+        return res.status(200).json({success:true,categorys});
     
     } catch (error) {
         console.error(error);

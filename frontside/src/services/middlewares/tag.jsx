@@ -17,18 +17,18 @@ export function getAllTags(token) {
      
         try {
             const response = await apiConnector("GET", GET_ALL_TAGS_API, null,{
-                "Content-Type": "application/json",
+                "Content-Type": "multipart/form-data",
                 Authorization: `Bearer ${token}`,  
             });
 
-            console.log("GET ALL TAG API RESPONSE............", response)
+            console.log("GET ALL TAG API RESPONSE............", response.data.tags)
 
             if (!response.data.success) {
                 throw new Error(response.data.message)
             }
-            dispatch(setTag(response.data))
+            dispatch(setTag(response.data.tags))
            
-            localStorage.setItem("Tags", response.data)  
+            localStorage.setItem("Tags", response.data.tags)  
             
             // navigate("/dashboard")
         } catch (error) {

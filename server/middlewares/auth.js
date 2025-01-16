@@ -4,7 +4,7 @@ import dotenv from "dotenv";dotenv.config();
 export const auth = async (req, res, next) => {
     try {
         //whatever name you give from frontend services/operations/bussiness/createBussiness that name you have to use
-        console.log(req.header("Authorization"))
+        // console.log(req.header("Authorization"))
         const token = req.header("Authorization")?.replace("Bearer ", "");;
         if (!token) {
             return res.status(401).json({ success: false, message: `Token Missing` });

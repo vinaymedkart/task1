@@ -15,7 +15,7 @@ export const createTag = async (req, res) => {
         // Create new tag
         const tag = await Tag.create({ name, isActive });
 
-        return res.status(201).json({ message: 'Tag created successfully', tag});
+        return res.status(201).json({success:true, message: 'Tag created successfully', tag});
     
     } catch (error) {
         console.error(error);
@@ -30,10 +30,10 @@ export const getAllTags = async (req, res) => {
         const tags = await Tag.findAll();
         
         if (tags.length === 0) {
-            return res.status(404).json({ message: 'No tags found' });
+            return res.status(404).json({success:true, message: 'No tags found' });
         }
 
-        return res.status(200).json(tags);
+        return res.status(200).json({success:true,tags});
     
     } catch (error) {
         console.error(error);

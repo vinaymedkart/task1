@@ -3,11 +3,8 @@ import React, { useState } from 'react';
 const CategoryModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const [formData, setFormData] = useState(initialData || {
     name: '',
-    description: '',
-    parentId: null,
-    image: '',
-    active: true,
-    displayOrder: 0
+    
+    active: true
   });
 
   const [errors, setErrors] = useState({});
@@ -21,15 +18,6 @@ const CategoryModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
     if (!/^[a-zA-Z0-9\s-]+$/.test(data.name)) {
       newErrors.name = 'Category name can only contain letters, numbers, spaces, and hyphens';
     }
-
-    if (data.displayOrder < 0) {
-      newErrors.displayOrder = 'Display order must be a positive number';
-    }
-
-    if (data.image && !/\.(jpg|jpeg|png|webp)$/i.test(data.image)) {
-      newErrors.image = 'Image must be JPG, PNG, or WebP format';
-    }
-
     return newErrors;
   };
 
@@ -44,15 +32,7 @@ const CategoryModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
     }
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({
-        ...prev,
-        image: URL.createObjectURL(file)
-      }));
-    }
-  };
+  
 
   if (!isOpen) return null;
 
@@ -90,75 +70,7 @@ const CategoryModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
 
-            {/* Parent Category Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Parent Category
-              </label>
-              <select
-                value={formData.parentId || ''}
-                onChange={e => setFormData({...formData, parentId: e.target.value ? parseInt(e.target.value) : null})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500"
-              >
-                <option value="">None (Top Level)</option>
-                {/* Add your category options here */}
-                <option value="1">Category 1</option>
-                <option value="2">Category 2</option>
-              </select>
-            </div>
-
-            {/* Display Order */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Display Order
-              </label>
-              <input
-                type="number"
-                value={formData.displayOrder}
-                onChange={e => setFormData({...formData, displayOrder: parseInt(e.target.value)})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500"
-                min="0"
-              />
-              {errors.displayOrder && <p className="text-red-500 text-sm mt-1">{errors.displayOrder}</p>}
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500"
-                rows="3"
-                placeholder="Enter category description"
-              />
-            </div>
-
-            {/* Image Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category Image
-              </label>
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,.webp"
-                onChange={handleImageUpload}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500"
-              />
-              {errors.image && <p className="text-red-500 text-sm mt-1">{errors.image}</p>}
-              {formData.image && (
-                <div className="mt-2">
-                  <img
-                    src={formData.image}
-                    alt="Category preview"
-                    className="w-32 h-32 object-cover rounded"
-                  />
-                </div>
-              )}
-            </div>
-
+            
             {/* Active Status */}
             <div className="flex items-center">
               <input

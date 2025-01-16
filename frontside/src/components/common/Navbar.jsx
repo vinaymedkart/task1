@@ -13,6 +13,7 @@ const Navbar = () => {
     dispatch(setSignupData(null));
     dispatch(setToken(null));
     localStorage.removeItem("token");
+    localStorage.removeItem("data");
     navigate("/");
     window.location.reload();
   };

@@ -6,16 +6,14 @@ import Admin from "../components/core/PrivateRoutes/Admin.jsx";
 import {getAllTags} from "../services/middlewares/tag.jsx"
 import { useDispatch } from 'react-redux';
 import { getAllCategorys } from "../services/middlewares/category.jsx";
+import ProductList from "../components/common/ProductList.jsx";
 
 const Home = () => {
   const { data ,token} = useSelector((state) => state.auth);
   const {tag} = useSelector((state)=>state.appdata)
   const dispatch= useDispatch()
 
-  useEffect(()=>{
-    // dispatch(getAllTags(token))
-    dispatch(getAllCategorys(token))
-  },[])
+  
 
   return (
     <div className="w-full min-h-screen bg-sky-50">
@@ -36,14 +34,14 @@ const Home = () => {
         </div>
 
         {/* Central Medical Icon */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        {/* <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
           <div className="relative w-64 h-64">
             <div className="absolute inset-0 bg-sky-100 rounded-full"></div>
             <div className="absolute inset-4 bg-white rounded-full shadow-lg flex items-center justify-center">
               <div className="text-sky-600 text-6xl font-bold">+</div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Search Bar */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-xl">
@@ -61,6 +59,7 @@ const Home = () => {
         <div>
           { <Admin><Feature/></Admin>}
         </div>
+        <ProductList/>
       </div>
     </div>
   );

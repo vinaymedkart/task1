@@ -6,10 +6,9 @@ import {
     getAllProducts
 } from "../controllers/Product.js"
 
-// const { auth } = require("../middlewares/auth")
 
-router.post("/:id/create",auth, createProduct)
-router.get("/getAll",getAllProducts )
+router.post("/create",auth, createProduct)
+router.get("/getAllProducts",getAllProducts )
 
 
 export default router

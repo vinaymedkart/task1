@@ -14,25 +14,26 @@ export function getAllCategorys(token) {
     return async (dispatch) => {
         const toastId = toast.loading("Loading...")
         dispatch(setLoading(true))
-     
+        // console.log(token)
         try {
             const response = await apiConnector("GET", GET_ALL_CATEGORYS_API, null,{
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`  
             });
 
-            console.log("GET ALL CATEGORY API RESPONSE............", response)
+            console.log("GET ALL CATEGORY API RESPONSE............", response.data.categorys)
 
             if (!response.data.success) {
                 throw new Error(response.data.message)
             }
-            dispatch(setCategory(response.data))
+        
+            dispatch(setCategory(response.data.categorys))
            
-            localStorage.setItem("categorys", response.data)  
+            localStorage.setItem("categorys", response.data.categorys)  
             
             // navigate("/dashboard")
         } catch (error) {
-            console.log("GET ALL categoryS API ERROR............", error)
+            console.log("GET ALL categorys API ERROR............", error)
             
         }
         dispatch(setLoading(false))

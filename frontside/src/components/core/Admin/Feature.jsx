@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import ProductModal from '../../common/ProductModal';
-import CategoryModal from '../../common/CategoryModal'; // import CategoryModal
-import TagModal from '../../common/TagModal'; // import TagModal
+import CategoryModal from '../../common/CategoryModal';
+import TagModal from '../../common/TagModal';
+import { createProduct } from '../../../services/middlewares/product';
+import { useDispatch, useSelector } from 'react-redux';
 
 function Feature() {
-    // Track which modal is open using the title
     const [openModal, setOpenModal] = useState({
         isOpen: false,
         type: null
     });
+    const dispatch = useDispatch();
+    const token = useSelector((state) => state.auth.token);
 
     const handleSubmit = (data) => {
-        // Handle the product, tag, or category submission here based on type
+        if (openModal.type === "Product") {
+            dispatch(createProduct(token, data));
+        }
         console.log('Submitted data for:', openModal.type, data);
+        setOpenModal({ isOpen: false, type: null }); // Close modal after submission
     };
 
     const features = [
@@ -60,7 +66,6 @@ function Feature() {
                 ))}
             </div>
 
-            {/* Render Modals based on the selected type */}
             {openModal.type === 'Product' && (
                 <ProductModal 
                     isOpen={openModal.isOpen}

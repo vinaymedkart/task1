@@ -8,10 +8,15 @@ export const AuthEndpoints = {
 }
 // TAG ENDPOINTS
 export const TagEndpoints = {
-  GET_ALL_TAGS_API: `${BASE_URL}/tag/getAll`,
+  GET_ALL_TAGS_API: BASE_URL+"/tag/getAll",
 }
 
 // CATEGORY ENDPOINTS
 export const CategoryEndpoints = {
-  GET_ALL_CATEGORYS_API: `${BASE_URL}/category/getAll`,
+  GET_ALL_CATEGORYS_API: BASE_URL+"/category/getAll",
+}
+// PRODUCT ENDPOINTS
+export const ProductEndpoints = {
+  CREATE_PRODUCT_API: BASE_URL+"/product/create",
+  GET_ALL_PRODUCTS_API: BASE_URL+`/product/getAllProducts`
 }

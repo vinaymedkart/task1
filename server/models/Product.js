@@ -52,7 +52,7 @@ class Product extends Model {
                     validate: {
                         isImageFormat(value) {
                             value.forEach((img) => {
-                                if (!/\.(png|jpeg|webp)$/i.test(img)) {
+                                if (!/\.(png|jpeg|webp|jpg)$/i.test(img)) {
                                     throw new Error(
                                         "Images must be .png, .jpeg, or .webp"
                                     );
