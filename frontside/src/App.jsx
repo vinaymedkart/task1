@@ -9,13 +9,13 @@ import Navbar from './components/common/Navbar';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 import Home from './pages/Home';
+import { getAllTags } from './services/middlewares/tag.jsx';
+import { getAllCategorys } from './services/middlewares/category.jsx';
 
 function App() {
   const { token } = useSelector((state) => state.auth);
 
-  useEffect(() => {
-      
-  }, []);
+  
 
 
   return (

@@ -50,38 +50,36 @@ export function signUp(signupData,  navigate) {
     }
 }
 
-
 export function login(email, password, navigate) {
     return async (dispatch) => {
-        const toastId = toast.loading("Loading...")
-        dispatch(setLoading(true))
+        const toastId = toast.loading("Loading...");
+        dispatch(setLoading(true));
         try {
             const response = await apiConnector("POST", LOGIN_API, {
                 email,
                 password
-            })
-            // console.log(response)
-
-            console.log("LOGIN API RESPONSE............", response)
+            });
+            console.log("LOGIN API RESPONSE............", response);
 
             if (!response.data.success) {
-                throw new Error(response.data.message)
+                throw new Error(response.data.message);
             }
 
-            toast.success("Login Successful")
-            dispatch(setToken(response.data.token))
-            dispatch(setData(response.data.verifyData))
+            toast.success("Login Successful");
+            dispatch(setToken(response.data.token));
+            dispatch(setData(response.data.verifyData));
+
+     
+            localStorage.setItem("token", response.data.token);
+            localStorage.setItem("data", response.data.verifyData);  // Make sure to store it as a JSON string
             
-            // console.log(response.data);
-            localStorage.setItem("token", response.data.token)  
-            localStorage.setItem("data", response.data.verifyData)  
-            
-            navigate("/")
+
+            navigate("/");  // Redirect to home or another page
         } catch (error) {
-            console.log("LOGIN API ERROR............", error)
-            toast.error("Login Failed")
+            console.log("LOGIN API ERROR............", error);
+            toast.error("Login Failed");
         }
-        dispatch(setLoading(false))
-        toast.dismiss(toastId)
+        dispatch(setLoading(false));
+        toast.dismiss(toastId);
     }
 }

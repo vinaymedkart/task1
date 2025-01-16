@@ -2,11 +2,10 @@ import express from 'express'
 const router = express.Router()
 import {auth} from '../middlewares/auth.js' 
 import {
-    createCart
-} from "../controllers/Cart.js"
+    addCartItem
+} from "../controllers/CartItem.js"
 
-// const { auth } = require("../middlewares/auth")
 
-router.post('/create',createCart)
+router.post('/add',auth,addCartItem)
 
 export default router

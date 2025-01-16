@@ -11,7 +11,7 @@ import UserRoutes from "./routes/User.js";
 import productRoutes from './routes/Product.js';
 import tagRoutes from './routes/Tags.js';
 import categoryRoutes from './routes/Category.js';
-import cartRoutes from './routes/Cart.js';
+import cartRoutes from './routes/CartItem.js';
 
 const app = express();
 const PORT= process.env.PORT
@@ -44,4 +44,4 @@ app.use("/api/v1/auth", UserRoutes);
 app.use("/api/v1/tag", tagRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/product", productRoutes);
-app.use("/api/v1/cart", cartRoutes);
+app.use("/api/v1/cartItem", cartRoutes);

@@ -26,11 +26,31 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const { token } = useSelector((state) => state.auth);
   const { tag, category } = useSelector((state) => state.appdata);
   const dispatch = useDispatch();
-
   useEffect(() => {
     dispatch(getAllTags(token));
     dispatch(getAllCategorys(token));
-  }, [dispatch, token]);
+  }, []);
+  useEffect(() => {
+    if (initialData) {
+        setFormData({
+            name: initialData.name || '',
+            salesPrice: initialData.salesPrice || '',
+            mrp: initialData.mrp || '',
+            packageSize: initialData.packageSize || '',
+            images: initialData.images || [],
+            categoryId: initialData.categoryId || '',
+            sell: initialData.sell ?? true,
+            stock: initialData.stock || 0,
+            tags: initialData.tags || [],
+        });
+
+        // Set preview URLs for existing images
+        if (initialData.images && initialData.images.length > 0) {
+            setPreviewUrls(initialData.images);
+        }
+    }
+}, [initialData]);
+
 
   useEffect(() => {
     return () => {
@@ -141,22 +161,24 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
     e.preventDefault();
     const validationErrors = validate(formData);
     if (Object.keys(validationErrors).length === 0) {
-      const submissionData = {
-        name: formData.name,
-        salesPrice: formData.salesPrice,
-        mrp: formData.mrp,
-        packageSize: formData.packageSize,
-        categoryId: formData.categoryId,
-        sell: formData.sell,
-        stock: formData.stock,
-        tags: formData.tags,
-        images: selectedFiles
-      };
-      onSubmit(submissionData);
+        const submissionData = {
+            wsCode: initialData?.wsCode, 
+            name: formData.name,
+            salesPrice: Number(formData.salesPrice),
+            mrp: Number(formData.mrp),
+            packageSize: Number(formData.packageSize),
+            categoryId: formData.categoryId,
+            sell: formData.sell,
+            stock: Number(formData.stock),
+            tags: formData.tags,
+            images: selectedFiles.length > 0 ? selectedFiles : previewUrls // Use existing images if no new ones uploaded
+        };
+        console.log('Submitting updated data:', submissionData);
+        onSubmit(submissionData);
     } else {
-      setErrors(validationErrors);
+        setErrors(validationErrors);
     }
-  };
+};
 
   if (!isOpen) return null;
 

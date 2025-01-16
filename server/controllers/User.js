@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken"
 import dotenv from "dotenv"; dotenv.config();
 
 import User  from "../models/User.js";
+import Cart from "../models/Cart.js";
 
 
 export const signup = async(req,res)=>{
@@ -53,20 +54,25 @@ export const signup = async(req,res)=>{
 			});
 		}
         const hashedPassword = await bcrypt.hash(password, 10);
-		const dummy = {
+		const data = {
 			firstName,
 			lastName,
 			email,
 		}
         const user = await User.create({
-			...dummy,
+			...data,
 			password: hashedPassword,
 			role
 		});
 
+		await Cart.create({
+            UserMail: user.email
+        });
+
+
 		return res.status(200).json({
 			success: true,
-			dummy,
+			data,
 			message: "Successfully registered ",
 		});
 

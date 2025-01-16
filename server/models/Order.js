@@ -4,9 +4,15 @@ class Order extends Model {
     static initModel(sequelize) {
         Order.init(
             {
-                UserId: {
-                    type: DataTypes.INTEGER,
+                UserMail: {
+                    type: DataTypes.STRING,
                     allowNull: false,
+                    references: {
+                        model: 'Users', // Name of the Users table
+                        key: 'email', // Column to reference
+                    },
+                    onDelete: 'CASCADE', // Cascade delete carts when a user is deleted
+                    onUpdate: 'CASCADE', //  Cascade updates to the email
                 },
                 cartId: {
                     type: DataTypes.INTEGER,

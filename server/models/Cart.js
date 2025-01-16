@@ -1,25 +1,24 @@
-import { DataTypes, Model } from "sequelize";
+import { DataTypes, DATE, Model } from "sequelize";
 
 class Cart extends Model {
     static initModel(sequelize) {
         Cart.init(
             {
-                UserId: {
-                    type: DataTypes.INTEGER,
+                UserMail: {
+                    type: DataTypes.STRING,
                     allowNull: false,
-                },
-                productId: {
-                    type: DataTypes.INTEGER,
-                    allowNull: false,
-                },
-                quantity: {
-                    type: DataTypes.INTEGER,
-                    allowNull: false,
-                    validate: {
-                        isInt: true,
-                        min: 1,
+                    references: {
+                        model: 'Users', // Name of the Users table
+                        key: 'email', // Column to reference
                     },
+                    onDelete: 'CASCADE', // Cascade delete carts when a user is deleted
+                    onUpdate: 'CASCADE', //  Cascade updates to the email
                 },
+                createdAt: {
+                    type: DataTypes.DATE,
+                    defaultValue: DataTypes.NOW,
+                },
+                
             },
             {
                 sequelize,

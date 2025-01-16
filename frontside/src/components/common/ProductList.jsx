@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllProducts } from '../../services/middlewares/product.jsx';
-import { ChevronLeft, ChevronRight, ShoppingCart, Plus, Edit2Icon, Edit3Icon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingCart, Plus, Edit2Icon } from 'lucide-react';
 import Admin from '../core/PrivateRoutes/Admin.jsx';
 import NotAdmin from '../core/PrivateRoutes/NotAdmin.jsx';
+import ProductModal from './ProductModal';
+import { getAllTags } from '../../services/middlewares/tag.jsx';
+import { getAllCategorys } from '../../services/middlewares/category.jsx';
+import { addToCart } from '../../services/middlewares/cart.jsx';
+// import { addItemToCart } from './cartStorage.jsx';
 
 const ProductList = () => {
     const dispatch = useDispatch();
     const { products, currentPage, totalPages } = useSelector((state) => state.appdata);
     const [selectedImageIndexes, setSelectedImageIndexes] = useState({});
     const [loading, setLoading] = useState(false);
-
+    const [openModal, setOpenModal] = useState({ isOpen: false, type: null, data: null });
+  const { data ,token} = useSelector((state) => state.auth);
     const fetchProducts = async (page) => {
         setLoading(true);
         try {
@@ -21,7 +27,8 @@ const ProductList = () => {
     };
 
     useEffect(() => {
-        fetchProducts(currentPage);
+        
+        fetchProducts(1);
     }, []);
 
     const handlePrevImage = (productId) => {
@@ -39,6 +46,44 @@ const ProductList = () => {
             ...prev,
             [productId]: ((prev[productId] || 0) + 1) % (products.find(p => p.wsCode === productId)?.images?.length || 1)
         }));
+    };
+
+    const handleEditClick = (product) => {
+        console.log('Edit product data:', product); // Debug log
+        setOpenModal({
+            isOpen: true,
+            type: 'edit',
+            data: {
+                wsCode: product.wsCode,
+                name: product.name,
+                salesPrice: product.salesPrice,
+                mrp: product.mrp,
+                packageSize: product.packageSize,
+                images: product.images,
+                categoryId: product.categoryId,
+                sell: product.sell,
+                stock: product.stock,
+                tags: product.tags || [], // Ensure tags is an array
+            }
+        });
+    };
+    const handleCartClick = (product) => {
+        
+        console.log('Cart product data:', product); 
+        // const updatedCart = addItemToCart(data.email, product.wsCode, 1); 
+        // dispatch(addToCart(token, {
+        //     productId: product.wsCode,
+        //     quantity: 1
+        // }));
+    };
+
+    const handleSubmit = (formData) => {
+        if (openModal.type === 'edit') {
+            console.log('Updated product data:', formData);
+            // Here you would typically dispatch your update action
+            // dispatch(updateProduct(formData));
+        }
+        setOpenModal({ isOpen: false, type: null, data: null });
     };
 
     const renderPagination = () => {
@@ -196,23 +241,21 @@ const ProductList = () => {
                                             )}
                                         </div>
                                         <div>
-                                            {<Admin>
-                                                <button className="flex items-center gap-2 bg-sky-100 text-sky-800 px-4 py-2 rounded-full hover:bg-sky-200 transition-colors duration-200">
-                                                    <Plus className="w-4 h-4" />
+                                            <Admin>
+                                                <button 
+                                                    onClick={() => handleEditClick(product)}
+                                                    className="flex items-center gap-2 bg-sky-100 text-sky-800 px-4 py-2 rounded-full hover:bg-sky-200 transition-colors duration-200"
+                                                >
                                                     <Edit2Icon className="w-4 h-4" />
                                                 </button>
-                                            </Admin>}
+                                            </Admin>
 
-                                            ,{
-                                                <NotAdmin>
-                                                    <>
-                                                        <button className="flex items-center gap-2 bg-sky-100 text-sky-800 px-4 py-2 rounded-full hover:bg-sky-200 transition-colors duration-200">
-                                                            <Plus className="w-4 h-4" />
-                                                            <ShoppingCart className="w-4 h-4" />
-                                                        </button>
-                                                    </>
-                                                </NotAdmin>
-                                            }
+                                            <NotAdmin>
+                                                <button onClick={() => handleCartClick(product)} className="flex items-center gap-2 bg-sky-100 text-sky-800 px-4 py-2 rounded-full hover:bg-sky-200 transition-colors duration-200">
+                                                    <Plus className="w-4 h-4" />
+                                                    <ShoppingCart className="w-4 h-4" />
+                                                </button>
+                                            </NotAdmin>
                                         </div>
                                     </div>
 
@@ -231,6 +274,14 @@ const ProductList = () => {
                     )}
                 </>
             )}
+
+            <ProductModal 
+                isOpen={openModal.isOpen}
+                onClose={() => setOpenModal({ isOpen: false, type: null, data: null })}
+                onSubmit={handleSubmit}
+                initialData={openModal.data}
+                type={openModal.type}
+            />
         </div>
     );
 };

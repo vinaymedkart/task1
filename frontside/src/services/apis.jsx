@@ -20,3 +20,6 @@ export const ProductEndpoints = {
   CREATE_PRODUCT_API: BASE_URL+"/product/create",
   GET_ALL_PRODUCTS_API: BASE_URL+`/product/getAllProducts`
 }
+export const CartEndpoints = {
+  ADD_TO_CART_API: BASE_URL+"/cartItem/add",
+}
