@@ -12,6 +12,7 @@ import productRoutes from './routes/Product.js';
 import tagRoutes from './routes/Tags.js';
 import categoryRoutes from './routes/Category.js';
 import cartRoutes from './routes/CartItem.js';
+import orderRoutes from './routes/Order.js';
 
 const app = express();
 const PORT= process.env.PORT
@@ -45,3 +46,4 @@ app.use("/api/v1/tag", tagRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/cartItem", cartRoutes);
+app.use("/api/v1/order", orderRoutes);

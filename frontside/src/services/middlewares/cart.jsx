@@ -1,63 +1,69 @@
-
 import { toast } from "react-hot-toast"
 import { setLoading } from "../../redux/slices/auth"
+import { apiConnector } from "../apiconnector"
+import { CartEndpoints } from "../apis"
+// import { setCartItems } from "../../redux/slices/appdata" 
 
-import  {apiConnector}  from "../apiconnector"
-import {CartEndpoints} from "../apis"
-import { setProducts } from "../../redux/slices/appdata"
+const { ADD_TO_CART_API, GET_CART_ITEMS_API } = CartEndpoints
 
-const {
-ADD_TO_CART_API
-
-} = CartEndpoints
-
-export function addToCart(token,data) {
+export function addToCart(token, cartItems) {
     return async (dispatch) => {
-        const toastId = toast.loading("Loading...")
+        const toastId = toast.loading("Adding items to cart...")
         dispatch(setLoading(true))
-        // console.log(data)
-
         try {
-            const response = await apiConnector("POST", ADD_TO_CART_API, data, {
-                "Content-Type": "multipart/form-data",
-                Authorization: `Bearer ${token}`,
-            });
+          // Transform localStorage cart data to match backend expectations
+          const cartData = Object.entries(cartItems).map(([productId, quantity]) => ({
+            productId,
+            quantity
+          }));
+         
 
-            console.log("ADD PRODUCT TO CART API RESPONSE............", response.data)
+            const response = await apiConnector("POST", ADD_TO_CART_API, 
+                { items: cartData },
+                {
+                    Authorization: `Bearer ${token}`,
+                }
+            );
 
             if (!response.data.success) {
                 throw new Error(response.data.message)
             }
+
+            // toast.success("Items added to cart successfully");
+            return response.data;
+
         } catch (error) {
-            console.log("GET ALL CART ITEMS API ERROR............", error)
+            console.log("ADD TO CART API ERROR............", error)
+            toast.error(error.message || "Failed to add items to cart");
+        } finally {
+            dispatch(setLoading(false))
+            toast.dismiss(toastId)
         }
-        dispatch(setLoading(false))
-        toast.dismiss(toastId)
     }
 }
-
 export function getAllCartProducts(token) {
   return async (dispatch) => {
-    const toastId = toast.loading("Loading cart products...");
-    dispatch(setLoading(true));
+      const toastId = toast.loading("Loading cart items...")
+      dispatch(setLoading(true))
 
-    try {
-      const response = await apiConnector("GET",'');
+      try {
+          const response = await apiConnector("GET", GET_CART_ITEMS_API, null, {
+              Authorization: `Bearer ${token}`,
+          });
 
-      console.log("GET ALL CART PRODUCTS RESPONSE............", response.data);
+          if (!response.data.success) {
+              throw new Error(response.data.message)
+          }
 
-      if (!response.data.success) {
-        throw new Error(response.data.message);
+          // dispatch(setCartItems(response.data.cartItems));
+          return response.data;
+
+      } catch (error) {
+          console.log("GET CART ITEMS API ERROR............", error)
+          toast.error(error.message || "Failed to fetch cart items");
+      } finally {
+          dispatch(setLoading(false))
+          toast.dismiss(toastId)
       }
-
-      // Dispatch the products and pagination details to the store
-     
-    } catch (error) {
-      console.log("GET ALL CART PRODUCTS ERROR............", error);
-      toast.error(error.message || "Failed to fetch products.");
-    }
-
-    dispatch(setLoading(false));
-    toast.dismiss(toastId);
-  };
+  }
 }

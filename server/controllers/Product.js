@@ -3,16 +3,7 @@ import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { uploadImageToCloudinary } from "../utils/imageUploader.js";
 
-// const { name, salesPrice, mrp, packageSize, tags, categoryId,sell } = req.body;
-// const files = req.files?.images; 
-// console.log(req.body.name)
-// console.log(req.body.salesPrice)
-// console.log(req.body.mrp)
-// console.log(req.body.packageSize)
-// console.log(req.body.tags)
-// console.log(req.body.categoryId)
-// console.log(req.body.sell)
-// console.log(files)
+
 export const createProduct = async (req, res) => {
     try {
         const { name, salesPrice, mrp, packageSize, tags, categoryId, sell } = req.body;
@@ -71,6 +62,8 @@ export const createProduct = async (req, res) => {
         });
     }
 };
+
+
 export const getAllProducts = async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query; // Default page = 1, limit = 10

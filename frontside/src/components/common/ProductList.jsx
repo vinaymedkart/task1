@@ -8,15 +8,16 @@ import ProductModal from './ProductModal';
 import { getAllTags } from '../../services/middlewares/tag.jsx';
 import { getAllCategorys } from '../../services/middlewares/category.jsx';
 import { addToCart } from '../../services/middlewares/cart.jsx';
-// import { addItemToCart } from './cartStorage.jsx';
+
 
 const ProductList = () => {
     const dispatch = useDispatch();
+
     const { products, currentPage, totalPages } = useSelector((state) => state.appdata);
     const [selectedImageIndexes, setSelectedImageIndexes] = useState({});
     const [loading, setLoading] = useState(false);
     const [openModal, setOpenModal] = useState({ isOpen: false, type: null, data: null });
-  const { data ,token} = useSelector((state) => state.auth);
+    const { data, token, email } = useSelector((state) => state.auth);
     const fetchProducts = async (page) => {
         setLoading(true);
         try {
@@ -27,7 +28,7 @@ const ProductList = () => {
     };
 
     useEffect(() => {
-        
+
         fetchProducts(1);
     }, []);
 
@@ -48,8 +49,9 @@ const ProductList = () => {
         }));
     };
 
+
     const handleEditClick = (product) => {
-        console.log('Edit product data:', product); // Debug log
+        console.log('Edit product data:', product);
         setOpenModal({
             isOpen: true,
             type: 'edit',
@@ -63,20 +65,85 @@ const ProductList = () => {
                 categoryId: product.categoryId,
                 sell: product.sell,
                 stock: product.stock,
-                tags: product.tags || [], // Ensure tags is an array
+                tags: product.tags || [],
             }
         });
     };
-    const handleCartClick = (product) => {
-        
-        console.log('Cart product data:', product); 
-        // const updatedCart = addItemToCart(data.email, product.wsCode, 1); 
-        // dispatch(addToCart(token, {
-        //     productId: product.wsCode,
-        //     quantity: 1
-        // }));
+    const getCartQuantity = (wsCode) => {
+        try {
+            const cartData = JSON.parse(localStorage.getItem("usersData")) || {};
+            const userEmail = localStorage.getItem('email') || data?.email;
+            return userEmail && cartData[userEmail] ? (cartData[userEmail][wsCode] || 0) : 0;
+        } catch (error) {
+            console.error('Error reading cart data:', error);
+            return 0;
+        }
     };
 
+    const handleCartUpdate = (email, wsCode, quantityChange) => {
+        try {
+            let cartData = JSON.parse(localStorage.getItem("usersData")) || {};
+            if (!cartData[email]) {
+                cartData[email] = {};
+            }
+
+            const newQuantity = (cartData[email][wsCode] || 0) + quantityChange;
+            
+            if (newQuantity <= 0) {
+                delete cartData[email][wsCode];
+            } else {
+                cartData[email][wsCode] = newQuantity;
+            }
+
+            if (Object.keys(cartData[email]).length === 0) {
+                delete cartData[email];
+            }
+
+            localStorage.setItem("usersData", JSON.stringify(cartData));
+            // Force a re-render
+            setSelectedImageIndexes({...selectedImageIndexes}); 
+        } catch (error) {
+            console.error('Error updating cart:', error);
+        }
+    };
+
+    const handleCartClick = (product, quantityChange) => {
+        const email = localStorage.getItem('email') || data?.email;
+        if (email) {
+            handleCartUpdate(email, product.wsCode, quantityChange);
+        } else {
+            console.log("User not logged in or email missing");
+        }
+    };
+    const CartControls = ({ product }) => {
+        const quantity = getCartQuantity(product.wsCode);
+        
+        return quantity > 0 ? (
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => handleCartClick(product, -1)}
+                    className="bg-sky-100 text-sky-800 px-3 py-1 rounded-full hover:bg-sky-200 text-lg font-medium"
+                >
+                    -
+                </button>
+                <span className="text-sky-900 min-w-[20px] text-center">{quantity}</span>
+                <button
+                    onClick={() => handleCartClick(product, 1)}
+                    className="bg-sky-100 text-sky-800 px-3 py-1 rounded-full hover:bg-sky-200 text-lg font-medium"
+                >
+                    +
+                </button>
+            </div>
+        ) : (
+            <button
+                onClick={() => handleCartClick(product, 1)}
+                className="flex items-center gap-2 bg-sky-100 text-sky-800 px-4 py-2 rounded-full hover:bg-sky-200 transition-colors duration-200"
+            >
+                <Plus className="w-4 h-4" />
+                <ShoppingCart className="w-4 h-4" />
+            </button>
+        );
+    };
     const handleSubmit = (formData) => {
         if (openModal.type === 'edit') {
             console.log('Updated product data:', formData);
@@ -242,7 +309,7 @@ const ProductList = () => {
                                         </div>
                                         <div>
                                             <Admin>
-                                                <button 
+                                                <button
                                                     onClick={() => handleEditClick(product)}
                                                     className="flex items-center gap-2 bg-sky-100 text-sky-800 px-4 py-2 rounded-full hover:bg-sky-200 transition-colors duration-200"
                                                 >
@@ -251,11 +318,9 @@ const ProductList = () => {
                                             </Admin>
 
                                             <NotAdmin>
-                                                <button onClick={() => handleCartClick(product)} className="flex items-center gap-2 bg-sky-100 text-sky-800 px-4 py-2 rounded-full hover:bg-sky-200 transition-colors duration-200">
-                                                    <Plus className="w-4 h-4" />
-                                                    <ShoppingCart className="w-4 h-4" />
-                                                </button>
+                                            <CartControls product={product} />
                                             </NotAdmin>
+
                                         </div>
                                     </div>
 
@@ -275,7 +340,7 @@ const ProductList = () => {
                 </>
             )}
 
-            <ProductModal 
+            <ProductModal
                 isOpen={openModal.isOpen}
                 onClose={() => setOpenModal({ isOpen: false, type: null, data: null })}
                 onSubmit={handleSubmit}

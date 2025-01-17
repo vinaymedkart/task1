@@ -1,9 +1,10 @@
 
 import { toast } from "react-hot-toast"
-import { setData, setLoading, setToken } from "../../redux/slices/auth"
+import { setData, setEmail, setLoading, setToken } from "../../redux/slices/auth"
 import  {apiConnector}  from "../apiconnector"
 import { AuthEndpoints } from "../apis"
-
+import bcrypt from 'bcryptjs';
+import { jwtDecode } from 'jwt-decode';
 const {
     SIGNUP_API,
     LOGIN_API,
@@ -14,7 +15,7 @@ export function signUp(signupData,  navigate) {
     return async (dispatch) => {
         const toastId = toast.loading("Loading...")
         dispatch(setLoading(true))
-        console.log(signupData)
+        
         try {
             const {
                 firstName,
@@ -50,13 +51,14 @@ export function signUp(signupData,  navigate) {
     }
 }
 
-export function login(email, password, navigate) {
+export function login(emaill, password, navigate) {
     return async (dispatch) => {
         const toastId = toast.loading("Loading...");
         dispatch(setLoading(true));
         try {
+            
             const response = await apiConnector("POST", LOGIN_API, {
-                email,
+                email:emaill,
                 password
             });
             console.log("LOGIN API RESPONSE............", response);
@@ -66,10 +68,13 @@ export function login(email, password, navigate) {
             }
 
             toast.success("Login Successful");
+            const { email } = jwtDecode(response.data.token);
             dispatch(setToken(response.data.token));
             dispatch(setData(response.data.verifyData));
+            dispatch(setEmail());
+            
 
-     
+            localStorage.setItem("email", email);
             localStorage.setItem("token", response.data.token);
             localStorage.setItem("data", response.data.verifyData);  // Make sure to store it as a JSON string
             
