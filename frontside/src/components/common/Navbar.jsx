@@ -20,7 +20,7 @@ const Navbar = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("data");
     localStorage.removeItem("email");
-    navigate("/");
+    navigate("/auth/login");
     window.location.reload();
   };
 

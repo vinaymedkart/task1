@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, X, Upload, Tag } from 'lucide-react';
+import { Search, X, Upload, Tag,DeleteIcon } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllCategorys } from '../../services/middlewares/category';
 import { getAllTags } from '../../services/middlewares/tag';
@@ -12,11 +12,10 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
     packageSize: '',
     images: [],
     categoryId: '',
-    sell: true,
+    sell: false,
     stock: 0,
     tags: [],
   });
-
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [tagSearch, setTagSearch] = useState('');
@@ -26,37 +25,34 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const { token } = useSelector((state) => state.auth);
   const { tag, category } = useSelector((state) => state.appdata);
   const dispatch = useDispatch();
+
   useEffect(() => {
     dispatch(getAllTags(token));
     dispatch(getAllCategorys(token));
   }, []);
+
   useEffect(() => {
     if (initialData) {
-        setFormData({
-            name: initialData.name || '',
-            salesPrice: initialData.salesPrice || '',
-            mrp: initialData.mrp || '',
-            packageSize: initialData.packageSize || '',
-            images: initialData.images || [],
-            categoryId: initialData.categoryId || '',
-            sell: initialData.sell ?? true,
-            stock: initialData.stock || 0,
-            tags: initialData.tags || [],
-        });
+      setFormData({
+        name: initialData.name || '',
+        salesPrice: initialData.salesPrice || '',
+        mrp: initialData.mrp || '',
+        packageSize: initialData.packageSize || '',
+        images: initialData.images || [],
+        categoryId: initialData.categoryId || '',
+        sell: initialData.sell ?? true,
+        stock: initialData.stock || 0,
+        tags: initialData.tags || [],
+      });
 
-        // Set preview URLs for existing images
-        if (initialData.images && initialData.images.length > 0) {
-            setPreviewUrls(initialData.images);
-        }
+      // Set preview URLs for existing images
+      if (initialData.images?.length > 0) {
+        setPreviewUrls(initialData.images);
+        // Don't reset selected files for existing images
+        setSelectedFiles([]);
+      }
     }
-}, [initialData]);
-
-
-  useEffect(() => {
-    return () => {
-      previewUrls.forEach(url => URL.revokeObjectURL(url));
-    };
-  }, [previewUrls]);
+  }, [initialData]);
 
   useEffect(() => {
     if (tagSearch.trim()) {
@@ -70,6 +66,39 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
       setFilteredTags([]);
     }
   }, [tagSearch, tag, formData.tags]);
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
+  const validateImageFormat = (file) => {
+    const validFormats = ['image/png', 'image/jpeg', 'image/webp', 'image/jpg'];
+    return validFormats.includes(file.type);
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files).slice(0, 10 - selectedFiles.length);
+    const invalidFiles = files.filter((file) => !validateImageFormat(file));
+    if (invalidFiles.length > 0) {
+      setErrors((prev) => ({
+        ...prev,
+        images: 'Only .png, .jpeg, .jpg, and .webp formats are allowed',
+      }));
+      return;
+    }
+    setErrors((prev) => ({ ...prev, images: undefined }));
+    const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
+    setSelectedFiles((prev) => [...prev, ...files]);
+    setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
+  };
+
+  const removeImage = (index) => {
+    URL.revokeObjectURL(previewUrls[index]);
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleTagAdd = (selectedTag) => {
     setFormData((prev) => ({
@@ -85,100 +114,95 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
       tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
+  const validateNumericInput = (value, field) => {
+    const numValue = parseFloat(value);
 
-  const validateImageFormat = (file) => {
-    const validFormats = ['image/png', 'image/jpeg', 'image/webp', 'image/jpg'];
-    if (!validFormats.includes(file.type)) {
-      return false;
+    switch (field) {
+      case 'salesPrice':
+      case 'mrp':
+        if (isNaN(numValue) || numValue < 0) return '';
+        return Number(numValue.toFixed(2));
+
+      case 'packageSize':
+        if (isNaN(numValue) || numValue < 0) return '';
+        return Number(numValue.toFixed(3));
+
+      case 'stock':
+        if (isNaN(numValue) || numValue < 0) return '';
+        return Math.floor(numValue);
+
+      default:
+        return value;
     }
-    return true;
-  };
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const newFiles = files.slice(0, 10 - selectedFiles.length);
-    
-    // Validate image formats
-    const invalidFiles = newFiles.filter(file => !validateImageFormat(file));
-    if (invalidFiles.length > 0) {
-      setErrors(prev => ({
-        ...prev,
-        images: "Only .png, .jpeg, .jpg, and .webp formats are allowed"
-      }));
-      return;
-    }
-
-    // Clear image error if present
-    setErrors(prev => ({
-      ...prev,
-      images: undefined
-    }));
-    
-    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
-    
-    setSelectedFiles(prev => [...prev, ...newFiles]);
-    setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
-  };
-
-  const removeImage = (index) => {
-    URL.revokeObjectURL(previewUrls[index]);
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
-  };
-
+  }
   const validate = (data) => {
     const newErrors = {};
     if (!data.name || data.name.length < 2 || data.name.length > 100) {
       newErrors.name = 'Name must be between 2 and 100 characters';
     }
-    if (!data.salesPrice || data.salesPrice < 0.01 || data.salesPrice > 999999.99) {
+
+    const salesPrice = parseFloat(data.salesPrice);
+    const mrp = parseFloat(data.mrp);
+    const packageSize = parseFloat(data.packageSize);
+
+    if (isNaN(salesPrice) || salesPrice < 0.01 || salesPrice > 999999.99) {
       newErrors.salesPrice = 'Sales price must be between 0.01 and 999,999.99';
     }
-    if (!data.mrp || data.mrp < data.salesPrice || data.mrp > 999999.99) {
+
+    if (isNaN(mrp) || mrp < salesPrice || mrp > 999999.99) {
       newErrors.mrp = 'MRP must be greater than sales price and less than 999,999.99';
     }
-    if (!data.packageSize || data.packageSize < 0.001 || data.packageSize > 9999.999) {
+
+    if (isNaN(packageSize) || packageSize < 0.001 || packageSize > 9999.999) {
       newErrors.packageSize = 'Package size must be between 0.001 and 9,999.999';
     }
-    if (!selectedFiles.length) {
-      newErrors.images = 'At least one image is required';
+
+    if ((!selectedFiles.length && !previewUrls.length) ||
+      (selectedFiles.length + previewUrls.length) > 10) {
+      newErrors.images = 'At least one image is required and maximum 10 images are allowed';
     }
-    // Validate image formats during form submission
-    const invalidFiles = selectedFiles.filter(file => !validateImageFormat(file));
-    if (invalidFiles.length > 0) {
-      newErrors.images = "Only .png, .jpeg, .jpg, and .webp formats are allowed";
-    }
+
     if (!data.categoryId) {
       newErrors.categoryId = 'Category is required';
     }
+
     if (!data.tags.length) {
       newErrors.tags = 'At least one tag is required';
     }
+
     return newErrors;
   };
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const validationErrors = validate(formData);
     if (Object.keys(validationErrors).length === 0) {
-        const submissionData = {
-            wsCode: initialData?.wsCode, 
-            name: formData.name,
-            salesPrice: Number(formData.salesPrice),
-            mrp: Number(formData.mrp),
-            packageSize: Number(formData.packageSize),
-            categoryId: formData.categoryId,
-            sell: formData.sell,
-            stock: Number(formData.stock),
-            tags: formData.tags,
-            images: selectedFiles.length > 0 ? selectedFiles : previewUrls // Use existing images if no new ones uploaded
-        };
-        console.log('Submitting updated data:', submissionData);
-        onSubmit(submissionData);
+      const submissionData = {
+        wsCode: initialData?.wsCode,
+        name: formData.name,
+        salesPrice: Number(formData.salesPrice),
+        mrp: Number(formData.mrp),
+        packageSize: Number(formData.packageSize),
+        categoryId: formData.categoryId,
+        sell: formData.sell,
+        stock: Number(formData.stock),
+        tags: formData.tags,
+        images: selectedFiles.length > 0 ? selectedFiles : previewUrls,
+      };
+      onSubmit(submissionData);
     } else {
-        setErrors(validationErrors);
+      setErrors(validationErrors);
     }
-};
+  };
+  const handleInputChange = (e, field) => {
+    const value = e.target.value;
+    const validatedValue = validateNumericInput(value, field);
+    setFormData(prev => ({
+      ...prev,
+      [field]: validatedValue
+    }));
+  };
 
   if (!isOpen) return null;
 
@@ -192,9 +216,9 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
               <h2 className="text-3xl font-semibold text-sky-900">
                 {initialData ? 'Edit Product' : 'Add New Product'}
               </h2>
-              <button 
+              <button
                 type="button"
-                onClick={onClose} 
+                onClick={onClose}
                 className="text-sky-500 hover:text-sky-700 p-2 rounded-full hover:bg-sky-50"
               >
                 <X className="w-6 h-6" />
@@ -222,7 +246,10 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     <input
                       type="number"
                       value={formData.salesPrice}
-                      onChange={(e) => setFormData({ ...formData, salesPrice: e.target.value })}
+                      onChange={(e) => handleInputChange(e, 'salesPrice')}
+                      onWheel={(e) => e.target.blur()}
+                      min="0"
+                      step="0.01"
                       className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                       placeholder="0.00"
                     />
@@ -234,7 +261,10 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     <input
                       type="number"
                       value={formData.mrp}
-                      onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
+                      onChange={(e) => handleInputChange(e, 'mrp')}
+                      onWheel={(e) => e.target.blur()}
+                      min="0"
+                      step="0.01"
                       className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                       placeholder="0.00"
                     />
@@ -245,15 +275,18 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     <label className="text-sky-900 font-medium">Package Size</label>
                     <input
                       type="number"
-                      step="0.001"
                       value={formData.packageSize}
-                      onChange={(e) => setFormData({ ...formData, packageSize: e.target.value })}
+                      onChange={(e) => handleInputChange(e, 'packageSize')}
+                      onWheel={(e) => e.target.blur()}
+                      min="0"
+                      step="0.001"
                       className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                       placeholder="0.000"
                     />
                     {errors.packageSize && <p className="text-red-500 text-sm">{errors.packageSize}</p>}
                   </div>
                 </div>
+
 
                 <div className="space-y-2">
                   <label className="text-sky-900 font-medium">Images</label>
@@ -266,8 +299,8 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                       className="hidden"
                       id="image-upload"
                     />
-                    <label 
-                      htmlFor="image-upload" 
+                    <label
+                      htmlFor="image-upload"
                       className="cursor-pointer flex flex-col items-center space-y-2"
                     >
                       <Upload className="w-8 h-8 text-sky-500" />
@@ -281,7 +314,7 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                       </span>
                     </label>
                   </div>
-                  
+
                   {previewUrls.length > 0 && (
                     <div className="grid grid-cols-5 gap-4 mt-4">
                       {previewUrls.map((url, index) => (
@@ -334,7 +367,7 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                       className="w-full border border-sky-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                     />
                   </div>
-                  
+
                   {filteredTags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {filteredTags.map((t) => (
@@ -370,6 +403,39 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                   </div>
                   {errors.tags && <p className="text-red-500 text-sm">{errors.tags}</p>}
                 </div>
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Stock Field */}
+                  <div className="space-y-2">
+                    <label className="text-sky-900 font-medium">Stock</label>
+                    <input
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => handleInputChange(e, 'stock')}
+                      onWheel={(e) => e.target.blur()}
+                      min="0"
+                      step="1"
+                      className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                      placeholder="0"
+                    />
+                    {errors.stock && <p className="text-red-500 text-sm">{errors.stock}</p>}
+                  </div>
+
+                  {/* Sell Field */}
+                  <div className="space-y-2">
+                    <label className="text-sky-900 font-medium">Sell</label>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={formData.sell}
+                        onChange={(e) => setFormData({ ...formData, sell: e.target.checked })}
+                        className="w-5 h-5 text-sky-500 focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                      />
+                      <span className="text-gray-700">Enable for sale</span>
+                    </div>
+                    {errors.sell && <p className="text-red-500 text-sm">{errors.sell}</p>}
+                  </div>
+                </div>
+
               </div>
             </div>
 

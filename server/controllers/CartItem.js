@@ -30,11 +30,11 @@ export const addCartItem = async (req, res) => {
 
                 const [cartItem, created] = await CartItem.findOrCreate({
                     where: { 
-                        CartId: cart.id, 
+                        cartId: cart.id, 
                         productId: product.wsCode // Use wsCode as it's the primary key
                     },
                     defaults: {
-                        CartId: cart.id,
+                        cartId: cart.id,
                         productId: product.wsCode,
                         quantity
                     }
@@ -140,7 +140,7 @@ export const updateCartItem = async (req, res) => {
 
         const cartItem = await CartItem.findOne({
             where: { 
-                CartId: cart.id, 
+                cartId: cart.id, 
                 productId // This should match the wsCode from Product
             }
         });
@@ -209,7 +209,7 @@ export const removeCartItem = async (req, res) => {
 
         const result = await CartItem.destroy({
             where: { 
-                CartId: cart.id, 
+                cartId: cart.id, 
                 productId // This should match the wsCode from Product
             }
         });

@@ -18,7 +18,9 @@ export const CategoryEndpoints = {
 // PRODUCT ENDPOINTS
 export const ProductEndpoints = {
   CREATE_PRODUCT_API: BASE_URL+"/product/create",
-  GET_ALL_PRODUCTS_API: BASE_URL+`/product/getAllProducts`
+  GET_ALL_PRODUCTS_API: BASE_URL+`/product/getAll`,
+  EDIT_PRODUCT_API:BASE_URL+`/product/edit`,
+  DELETE_PRODUCT_API:BASE_URL+`/product/delete`
 }
 // CART ENDPOINTS
 export const CartEndpoints = {

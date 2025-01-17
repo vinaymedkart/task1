@@ -14,7 +14,7 @@ const CustomerDetails = () => {
     const fetchPendingOrders = async () => {
         try {
             setLoading(true);
-            const response = await dispatch(allOrders());
+            const response = await dispatch(allOrders(token));
             if (response?.data?.pendingOrders) {
                 // Sort by creation date, newest first
                 const sortedOrders = response.data.pendingOrders.sort((a, b) => 

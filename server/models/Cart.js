@@ -10,9 +10,8 @@ class Cart extends Model {
                     references: {
                         model: 'Users', // Name of the Users table
                         key: 'email', // Column to reference
-                    },
-                    onDelete: 'CASCADE', // Cascade delete carts when a user is deleted
-                    onUpdate: 'CASCADE', //  Cascade updates to the email
+                    }
+                   
                 },
                 createdAt: {
                     type: DataTypes.DATE,

@@ -98,7 +98,7 @@ export function updateOrderStatus(orderId, status, token) {
     };
 }
 
-export function allOrders() {
+export function allOrders(token) {
     return async (dispatch) => {
         const toastId = toast.loading("Updating order status...");
         dispatch(setLoading(true));
@@ -113,15 +113,15 @@ export function allOrders() {
             if (!response.data.success) {
                 throw new Error(response.data.message);
             }
-
-            toast.success("All Order get successfully");
+            console.log(response)
+            toast.success("Pending Orders");
             return response.data;
 
         } catch (error) {
-            console.log("ERROR in updating order status:", error);
+            console.log("ERROR in geting all pending orders:", error);
             toast.error(error.message || "Failed to update order status");
             return false;
-            
+
         } finally {
             dispatch(setLoading(false));
             toast.dismiss(toastId);

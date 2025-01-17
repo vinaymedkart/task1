@@ -64,14 +64,7 @@ class Product extends Model {
                 categoryId: {
                     type: DataTypes.INTEGER, // Foreign key
                     allowNull: false,
-                },
-                sell: {
-                    type: DataTypes.BOOLEAN,
-                    allowNull: false,
-                    validate: {
-                        notEmpty: true,
-                    },
-                },
+                }
             },
             {
                 sequelize,

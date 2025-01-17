@@ -44,7 +44,7 @@ const Home = () => {
         </div> */}
 
         {/* Search Bar */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-xl">
+        {/* <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-xl">
           <div className="flex items-center bg-white rounded-full shadow-lg px-6 py-3">
             <Search className="text-gray-400 w-5 h-5" />
             <input
@@ -54,12 +54,14 @@ const Home = () => {
             />
             <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
           </div>
-        </div>
+        </div> */}
 
         <div>
           { <Admin><Feature/></Admin>}
         </div>
+        {
         <ProductList/>
+}
       </div>
     </div>
   );

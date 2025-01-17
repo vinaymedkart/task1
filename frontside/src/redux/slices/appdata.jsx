@@ -27,6 +27,12 @@ const appdataSlice = createSlice({
       state.currentPage = action.payload.currentPage;
       state.totalPages = action.payload.totalPages;
     },
+    updateProduct(state, action) {
+      const updatedProduct = action.payload;
+      state.products = state.products.map(product => 
+        product.wsCode === updatedProduct.wsCode ? updatedProduct : product
+      );
+    },
     setLoading(state, action) {
       state.loading = action.payload;
     },
@@ -37,6 +43,7 @@ const appdataSlice = createSlice({
 
       });
     },
+    
     addToCart(state, action) {
       const productName = action.payload.product.name;
       const productPrice = action.payload.product.price;
@@ -70,5 +77,5 @@ const appdataSlice = createSlice({
   },
 });
 
-export const { setTag, setCategory, setProducts, setLoading } = appdataSlice.actions;
+export const { setTag, setCategory, setProducts, setLoading,updateProduct } = appdataSlice.actions;
 export default appdataSlice.reducer;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getAllProducts } from '../../services/middlewares/product.jsx';
+import { deleteProduct, editProducts, getAllProducts } from '../../services/middlewares/product.jsx';
 import { ChevronLeft, ChevronRight, ShoppingCart, Plus, Edit2Icon } from 'lucide-react';
 import Admin from '../core/PrivateRoutes/Admin.jsx';
 import NotAdmin from '../core/PrivateRoutes/NotAdmin.jsx';
@@ -9,7 +9,7 @@ import { getAllTags } from '../../services/middlewares/tag.jsx';
 import { getAllCategorys } from '../../services/middlewares/category.jsx';
 import { addToCart } from '../../services/middlewares/cart.jsx';
 
-
+import { MdDelete } from "react-icons/md";
 const ProductList = () => {
     const dispatch = useDispatch();
 
@@ -21,16 +21,15 @@ const ProductList = () => {
     const fetchProducts = async (page) => {
         setLoading(true);
         try {
-            await dispatch(getAllProducts(page, 10));
+            await dispatch(getAllProducts(token));
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-
         fetchProducts(1);
-    }, []);
+    }, [products.length]);
 
     const handlePrevImage = (productId) => {
         setSelectedImageIndexes(prev => ({
@@ -69,6 +68,18 @@ const ProductList = () => {
             }
         });
     };
+    const handleDeleteClick = (productId) => {
+        const confirmed = window.confirm("Are you sure you want to delete this product?");
+        if (confirmed) {
+            // Dispatch an action or make an API call to delete the product
+            dispatch(deleteProduct(token, productId)); // Assuming you have a deleteProduct action
+            // You can also update the local state directly if no backend is involved
+            // dispatch({
+            //     type: 'REMOVE_PRODUCT',
+            //     payload: productId,
+            // });
+        }
+    };
     const getCartQuantity = (wsCode) => {
         try {
             const cartData = JSON.parse(localStorage.getItem("usersData")) || {};
@@ -88,7 +99,7 @@ const ProductList = () => {
             }
 
             const newQuantity = (cartData[email][wsCode] || 0) + quantityChange;
-            
+
             if (newQuantity <= 0) {
                 delete cartData[email][wsCode];
             } else {
@@ -101,7 +112,7 @@ const ProductList = () => {
 
             localStorage.setItem("usersData", JSON.stringify(cartData));
             // Force a re-render
-            setSelectedImageIndexes({...selectedImageIndexes}); 
+            setSelectedImageIndexes({ ...selectedImageIndexes });
         } catch (error) {
             console.error('Error updating cart:', error);
         }
@@ -117,7 +128,7 @@ const ProductList = () => {
     };
     const CartControls = ({ product }) => {
         const quantity = getCartQuantity(product.wsCode);
-        
+
         return quantity > 0 ? (
             <div className="flex items-center gap-2">
                 <button
@@ -144,11 +155,14 @@ const ProductList = () => {
             </button>
         );
     };
-    const handleSubmit = (formData) => {
+    const handleSubmit = async (formData) => {
         if (openModal.type === 'edit') {
-            console.log('Updated product data:', formData);
-            // Here you would typically dispatch your update action
-            // dispatch(updateProduct(formData));
+            await dispatch(editProducts(token, formData));
+
+            const updatedProducts = products.map(p =>
+                p.wsCode === formData.wsCode ? { ...p, ...formData } : p
+            );
+            dispatch({ type: 'SET_PRODUCTS', payload: updatedProducts });
         }
         setOpenModal({ isOpen: false, type: null, data: null });
     };
@@ -315,10 +329,16 @@ const ProductList = () => {
                                                 >
                                                     <Edit2Icon className="w-4 h-4" />
                                                 </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(product.wsCode)}
+                                                    className="flex items-center gap-2 bg-red-100 text-red-800 px-4 py-2 rounded-full hover:bg-red-200 transition-colors duration-200"
+                                                >
+                                                    <MdDelete className="w-4 h-4" />
+                                                </button>
                                             </Admin>
 
                                             <NotAdmin>
-                                            <CartControls product={product} />
+                                                <CartControls product={product} />
                                             </NotAdmin>
 
                                         </div>
@@ -332,11 +352,7 @@ const ProductList = () => {
                         ))}
                     </div>
 
-                    {totalPages > 1 && (
-                        <div className="mt-8">
-                            {renderPagination()}
-                        </div>
-                    )}
+
                 </>
             )}
 

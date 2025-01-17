@@ -6,6 +6,7 @@ import User from "./User.js";
 import Order from "./Order.js";
 import Tag from "./Tags.js";
 import Cart from "./Cart.js"
+import Inventory from "./Inventory.js";
 // Initialize models
 Category.initModel(sequelize);
 Product.initModel(sequelize);
@@ -14,7 +15,8 @@ Cart.initModel(sequelize)
 User.initModel(sequelize);
 Order.initModel(sequelize);
 Tag.initModel(sequelize);
-// Define relationships
+Inventory.initModel(sequelize);
+
 // Category and Product
 Category.hasMany(Product, { foreignKey: "categoryId" });
 Product.belongsTo(Category, { foreignKey: "categoryId" });
@@ -28,21 +30,26 @@ Cart.belongsTo(User, { foreignKey: 'UserMail' }); // Each cart belongs to one us
 
 
 // Cart and CartItem
-Cart.hasMany(CartItem, { foreignKey: "CartId", as: "items" });
-CartItem.belongsTo(Cart, { foreignKey: "CartId" });
+Cart.hasMany(CartItem, { foreignKey: "cartId", as: "items" });
+CartItem.belongsTo(Cart, { foreignKey: "cartId" });
 
 // User and Order
-Order.belongsTo(User, { foreignKey: "UserMail" });
-User.hasMany(Order, { foreignKey: "UserMail" });
+Order.belongsTo(User, { foreignKey: 'UserMail', targetKey: 'email' });
+User.hasMany(Order, { foreignKey: 'UserMail', sourceKey: 'email' });
 
 // CartItem and Order
-Order.belongsTo(Cart, { foreignKey: "CartId" });
+Order.belongsTo(Cart, { foreignKey: "cartId" });
 
 // Product and Tag through ProductTag
 const ProductTag = sequelize.define("ProductTag", {}, { timestamps: false });
 Product.belongsToMany(Tag, { through: ProductTag, foreignKey: "wsCode" });
 Tag.belongsToMany(Product, { through: ProductTag, foreignKey: "tagId" });
-// Export everything
+
+// Product and Inventory relationship
+Product.hasOne(Inventory, { foreignKey: 'wsCode' }); // One Product has one Inventory
+Inventory.belongsTo(Product, { foreignKey: 'wsCode' }); // Each Inventory belongs to one Product
+
+
 export {
     sequelize,
     Category,
@@ -52,5 +59,6 @@ export {
     Order,
     Tag,
     ProductTag,
-    Cart
+    Cart,
+    Inventory
 };

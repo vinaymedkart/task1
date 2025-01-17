@@ -1,5 +1,5 @@
-import {Cart,Order,CartItem ,Product} from '../models/index.js';
-import { Op } from 'sequelize';
+import {Cart,Order,CartItem ,Product, User} from '../models/index.js';
+import { Op,Sequelize } from 'sequelize';
 
 
 export const placeOrder= async (req, res) => {
@@ -39,7 +39,7 @@ export const placeOrder= async (req, res) => {
         const totalAmount = currentCart.items.reduce((sum, item) => {
             return sum + (item.Product.salesPrice * item.quantity);
         }, 0);
-
+        console.log(currentCart.id)
         const order = await Order.create({
             UserMail: userEmail,
             cartId: currentCart.id,
@@ -76,9 +76,6 @@ export const placeOrder= async (req, res) => {
         });
     }
 }
-
-
-
 
 export const getOrderHistory = async (req, res) => {
     try {
@@ -149,6 +146,10 @@ export const getOrderHistory = async (req, res) => {
             });
         }
 
+        // Calculate confirmed orders count and total spend
+        const confirmedOrders = allOrders.filter(order => order.status === "Confirmed");
+        const totalSpent = confirmedOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+
         return res.status(200).json({
             success: true,
             message: "Order history retrieved successfully",
@@ -158,7 +159,8 @@ export const getOrderHistory = async (req, res) => {
                 summary: {
                     totalOrders: allOrders.length,
                     pendingOrders: pendingOrders.length,
-                    totalSpent: allOrders.reduce((sum, order) => sum + order.totalAmount, 0)
+                    confirmedOrders: confirmedOrders.length,
+                    totalSpent: totalSpent
                 }
             }
         });
@@ -244,67 +246,62 @@ export const updateOrderStatus = async (req, res) => {
             error: error.message
         });
     }
-};
+}
 
 export const getAllPendingOrders = async (req, res) => {
     try {
         const pendingOrders = await Order.findAll({
-            where: {
-                status: 'Pending'
+            where: { 
+                status: "Pending" 
             },
             include: [
                 {
-                    model: User,
-                    attributes: ['email', 'firstName','lastName'] // Include any user details you need
-                },
-                {
                     model: Cart,
+                    required: true, 
                     include: [{
                         model: CartItem,
                         as: 'items',
+                        required: true, 
                         include: [{
                             model: Product,
-                            attributes: ['name', 'wsCode', 'salesPrice', 'images']
+                            required: true, // This ensures Product exists
+                            attributes: ['name', 'wsCode', 'salesPrice']
                         }]
                     }]
                 }
             ],
-            order: [['createdAt', 'DESC']], // Latest orders first
+            order: [['createdAt', 'DESC']]
         });
 
-        // Transform the data to match your frontend structure
         const formattedOrders = pendingOrders.map(order => {
             const orderData = order.get({ plain: true });
             return {
                 orderId: orderData.id,
-                createdAt: orderData.createdAt,
                 status: orderData.status,
-                totalAmount: orderData.totalAmount,
-                customerEmail: orderData.UserMail,
-                customerName: orderData.User.name,
-                items: orderData.Cart.items.map(item => ({
-                    productName: item.Product.name,
-                    productCode: item.Product.wsCode,
-                    price: item.Product.salesPrice,
-                    quantity: item.quantity,
-                    subtotal: item.Product.salesPrice * item.quantity,
-                    image: item.Product.images[0] // First image of the product
-                }))
+                totalAmount: orderData.totalAmount || 0,
+                createdAt: orderData.createdAt,
+                items: orderData.Cart?.items?.map(item => ({
+                    productName: item?.Product?.name || 'Unknown Product',
+                    productCode: item?.Product?.wsCode || 'N/A',
+                    price: item?.Product?.salesPrice || 0,
+                    quantity: item?.quantity || 0,
+                    subtotal: (item?.Product?.salesPrice || 0) * (item?.quantity || 0)
+                })) || []
             };
         });
 
         return res.status(200).json({
             success: true,
-            message: "Pending orders retrieved successfully",
-            pendingOrders: formattedOrders,
-            totalOrders: formattedOrders.length
+            data: {
+                pendingOrders: formattedOrders
+            }
         });
 
     } catch (error) {
-        console.error("Error in getAllPendingOrders: ", error);
+        console.error('Error in getAllPendingOrders:', error);
         return res.status(500).json({
             success: false,
-            message: "Error while fetching pending orders",
+            message: 'Error while fetching pending orders',
             error: error.message
         });
     }
