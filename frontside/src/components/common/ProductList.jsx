@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { deleteProduct, editProducts, getAllProducts } from '../../services/middlewares/product.jsx';
-import { ChevronLeft, ChevronRight, Edit2Icon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit2Icon, Package, Tag, Box, Loader2 } from 'lucide-react';
 import Admin from '../core/PrivateRoutes/Admin.jsx';
 import NotAdmin from '../core/PrivateRoutes/NotAdmin.jsx';
 import DeleteIcon from "../../assets/delete.png";
@@ -20,8 +20,17 @@ const ProductList = () => {
     const { token, loading } = useSelector((state) => state.auth);
     const [page, setPage] = useState(1);
     const [cartData, setCartData] = useState({});
-
     const [filters, setFilters] = useState({ searchbar: "", tags: [], categories: [] });
+
+    useEffect(() => {
+        fetchProducts(1);
+    }, [filters]);
+
+    useEffect(() => {
+        const email = localStorage.getItem('email');
+        const storedData = JSON.parse(localStorage.getItem("usersData")) || {};
+        setCartData(storedData[email] || {});
+    }, []);
 
     const fetchProducts = async (page = 1) => {
         if (token) {
@@ -32,33 +41,21 @@ const ProductList = () => {
         }
     };
 
-
-    useEffect(() => {
-   
-        fetchProducts(1);
-    }, [filters]);
-
-    useEffect(() => {
-        const email = localStorage.getItem('email');
-        const storedData = JSON.parse(localStorage.getItem("usersData")) || {};
-        setCartData(storedData[email] || {});
-    }, []);
-
-    const handlePrevImage = (productId) => {
-        setSelectedImageIndexes(prev => ({
-            ...prev,
-            [productId]: (prev[productId] === undefined ?
-                products.find(p => p.wsCode === productId)?.images?.length - 1 :
-                (prev[productId] - 1 + products.find(p => p.wsCode === productId)?.images?.length) %
-                products.find(p => p.wsCode === productId)?.images?.length) || 0
-        }));
-    };
-
-    const handleNextImage = (productId) => {
-        setSelectedImageIndexes(prev => ({
-            ...prev,
-            [productId]: ((prev[productId] || 0) + 1) % (products.find(p => p.wsCode === productId)?.images?.length || 1)
-        }));
+    const handleImageNavigation = (productId, direction) => {
+        setSelectedImageIndexes(prev => {
+            const currentProduct = products.find(p => p.wsCode === productId);
+            const totalImages = currentProduct?.images?.length || 1;
+            const currentIndex = prev[productId] || 0;
+            
+            let newIndex;
+            if (direction === 'prev') {
+                newIndex = (currentIndex - 1 + totalImages) % totalImages;
+            } else {
+                newIndex = (currentIndex + 1) % totalImages;
+            }
+            
+            return { ...prev, [productId]: newIndex };
+        });
     };
 
     const handleEditClick = (product) => {
@@ -83,13 +80,11 @@ const ProductList = () => {
     const handleDeleteClick = (productId) => {
         const confirmed = window.confirm("Are you sure you want to delete this product?");
         if (confirmed) {
-            console.log(token)
             dispatch(deleteProduct(token, productId));
         }
     };
 
     const handleSubmit = async (formData) => {
-        console.log(formData)
         if (openModal.type === 'edit') {
             await dispatch(editProducts(token, formData));
         }
@@ -98,86 +93,142 @@ const ProductList = () => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
-            <h2 className="text-3xl font-semibold text-sky-900 mb-8">Featured Products</h2>
-            <ProductFilters onFilterChange={setFilters} />
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <h2 className="text-3xl font-bold text-sky-900 mb-4 md:mb-0">
+                    Featured Products
+                    <div className="h-1 w-20 bg-gradient-to-r from-sky-500 to-sky-600 mt-2 rounded-full"></div>
+                </h2>
+            </div>
+
+            <div className="mb-8">
+                <ProductFilters onFilterChange={setFilters} />
+            </div>
+
             {loading ? (
                 <div className="flex justify-center items-center min-h-[400px]">
-                    <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin"></div>
+                    <Loader2 className="w-12 h-12 text-sky-600 animate-spin" />
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {products.map((product) => (
-                            <div key={product.wsCode} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                                <div className="relative h-64">
-                                    {/* Image section with navigation */}
+                            <div key={product.wsCode} 
+                                className="group bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                                <div className="relative h-72">
                                     {product.images && product.images.length > 0 ? (
                                         <>
                                             <img
                                                 src={product.images[selectedImageIndexes[product.wsCode] || 0]}
                                                 alt={product.name}
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                             {product.images.length > 1 && (
                                                 <>
-                                                    <button onClick={() => handlePrevImage(product.wsCode)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 hover:bg-white">
+                                                    <button 
+                                                        onClick={() => handleImageNavigation(product.wsCode, 'prev')}
+                                                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-white"
+                                                    >
                                                         <ChevronLeft className="w-5 h-5 text-sky-900" />
                                                     </button>
-                                                    <button onClick={() => handleNextImage(product.wsCode)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 hover:bg-white">
+                                                    <button 
+                                                        onClick={() => handleImageNavigation(product.wsCode, 'next')}
+                                                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-white"
+                                                    >
                                                         <ChevronRight className="w-5 h-5 text-sky-900" />
                                                     </button>
                                                 </>
                                             )}
+                                            {product.stock <= 10 && (
+                                                <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                                    Low Stock
+                                                </div>
+                                            )}
                                         </>
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                            <span className="text-gray-400">No image available</span>
+                                        <div className="w-full h-full flex items-center justify-center bg-sky-50">
+                                            <Package className="w-12 h-12 text-sky-300" />
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-lg font-medium text-sky-900">{product.name}</h3>
-                                        <span className="text-sm text-gray-500">WS: {product.wsCode}</span>
+                                <div className="p-6">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <h3 className="text-xl font-semibold text-sky-900 line-clamp-2">{product.name}</h3>
+                                        <span className="text-sm text-sky-600 font-medium bg-sky-50 px-2 py-1 rounded-md">
+                                            {product.wsCode}
+                                        </span>
                                     </div>
 
-                                    <div className="mt-2">
+                                    <div className="space-y-4">
                                         <div className="flex justify-between items-center">
-                                            <div>
-                                                <p className="text-sky-700 font-semibold">₹{product.salesPrice}</p>
+                                            <div className="space-y-1">
+                                                <p className="text-2xl font-bold text-sky-700">₹{product.salesPrice}</p>
                                                 {product.mrp > product.salesPrice && (
-                                                    <p className="text-sm text-gray-500 line-through">MRP: ₹{product.mrp}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm text-gray-500 line-through">MRP: ₹{product.mrp}</p>
+                                                        <span className="text-green-600 text-sm font-medium">
+                                                            {Math.round(((product.mrp - product.salesPrice) / product.mrp) * 100)}% off
+                                                        </span>
+                                                    </div>
                                                 )}
                                             </div>
                                             <div className="flex gap-2">
                                                 <Admin>
-                                                    <button onClick={() => handleEditClick(product)} className="p-2 bg-sky-100 text-sky-800 rounded-full hover:bg-sky-200">
-                                                        <Edit2Icon className="w-4 h-4" />
+                                                    <button 
+                                                        onClick={() => handleEditClick(product)} 
+                                                        className="p-2 bg-sky-100 text-sky-600 rounded-full hover:bg-sky-200 transition-colors duration-200"
+                                                    >
+                                                        <Edit2Icon className="w-5 h-5" />
                                                     </button>
-                                                    <button onClick={() => handleDeleteClick(product.wsCode)} className="p-2 bg-red-100 text-red-800 rounded-full hover:bg-red-200">
-                                                        <img src={DeleteIcon} className="h-4 w-4" alt="delete" />
+                                                    <button 
+                                                        onClick={() => handleDeleteClick(product.wsCode)} 
+                                                        className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors duration-200"
+                                                    >
+                                                        <img src={DeleteIcon} className="h-5 w-5" alt="delete" />
                                                     </button>
                                                 </Admin>
                                             </div>
                                         </div>
+
+                                        {product.packageSize && (
+                                            <div className="flex items-center gap-2 text-sky-700">
+                                                <Box className="w-4 h-4" />
+                                                <p className="text-sm">Pack size: {product.packageSize} units</p>
+                                            </div>
+                                        )}
+
+                                        {product.tags && product.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {product.tags.map((tag, index) => (
+                                                    <span 
+                                                        key={index}
+                                                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-sky-50 text-sky-700 text-sm"
+                                                    >
+                                                        <Tag className="w-3 h-3" />
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         <NotAdmin>
-                                            <CartControls product={product} cartData={cartData} setCartData={setCartData} />
+                                            <div className="pt-2">
+                                                <CartControls product={product} cartData={cartData} setCartData={setCartData} />
+                                            </div>
                                         </NotAdmin>
                                     </div>
-
-                                    {product.packageSize && (
-                                        <p className="text-sm text-gray-600 mt-2">Pack size: {product.packageSize} units</p>
-                                    )}
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={fetchProducts}
-                    />
+
+                    <div className="mt-12">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={fetchProducts}
+                        />
+                    </div>
                 </>
             )}
 

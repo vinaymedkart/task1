@@ -1,10 +1,10 @@
 import { Tag, Product, Category, Inventory, ProductTag,sequelize } from '../models/index.js';
 import { Op } from 'sequelize';
 
-export const initialCall = async (req, res) => {
+export const viewDetails = async (req, res) => {
 
 
-    //keep empty for now
+   
 }
 
 
