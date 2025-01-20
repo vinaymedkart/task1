@@ -4,7 +4,7 @@ import { setLoading } from "../../redux/slices/auth"
 
 import { apiConnector } from "../apiconnector"
 import { ProductEndpoints } from "../apis"
-import { setProducts, updateProduct } from "../../redux/slices/appdata"
+import { addProduct, setProducts, updateProduct ,delProduct} from "../../redux/slices/appdata"
 
 const {
   CREATE_PRODUCT_API,
@@ -18,31 +18,23 @@ export function createProduct(token, data) {
   return async (dispatch) => {
     const toastId = toast.loading("Loading...")
     dispatch(setLoading(true))
-    console.log(data)
-
-    const formData = new FormData();
-    formData.append("name", data.name);
-    formData.append("salesPrice", data.salesPrice);
-    formData.append("mrp", data.mrp);
-    formData.append("packageSize", data.packageSize);
-    formData.append("tags", JSON.stringify(data.tags)); // Make sure this is a stringified array
-    formData.append("categoryId", data.categoryId);
-    formData.append("sell", data.sell);
-    formData.append("stock", data.stock);
     
-
-    // Append images (this can be an array of files)
-    data.images.forEach(image => formData.append("images", image));
+    
+    data.tags=JSON.stringify(data.tags)
+    data.images=JSON.stringify(data.images)
+    // console.log(token)
+    // console.log(data)
 
     try {
-      const response = await apiConnector("POST", CREATE_PRODUCT_API, formData, {
-        "Content-Type": "multipart/form-data",
+      const response = await apiConnector("POST", CREATE_PRODUCT_API, data, {
         Authorization: `Bearer ${token}`,
       });
 
       console.log("CREATE PRODUCT API RESPONSE............", response.data)
-      // dispatch()
+      console.log();
+      dispatch(addProduct(response.data.product))
       window.location.reload();
+      
       if (!response.data.success) {
         throw new Error(response.data.message)
       }
@@ -53,30 +45,72 @@ export function createProduct(token, data) {
     toast.dismiss(toastId)
   }
 }
-// Middleware to fetch products
-export function getAllProducts( token) {
+
+// export function getAllProducts(token, page = 1, query = {}) {
+//   return async (dispatch) => {
+//     const toastId = toast.loading("Loading products...");
+//     dispatch(setLoading(true));
+//     try {
+//       // Convert arrays to comma-separated strings for query params
+//       const queryParams = new URLSearchParams({
+//         page: page,
+//         searchbar: query.searchbar || "",
+//         tags: query.tags?.join(',') || "",
+//         categorys: query.categories?.join(',') || "" // Note: API expects 'categorys'
+//       });
+//       console.log(query)
+
+//       const response = await apiConnector(
+//         "GET",
+//         `${GET_ALL_PRODUCTS_API}?${queryParams.toString()}`,
+//         null, // No body needed for GET request
+//         {
+//           Authorization: `Bearer ${token}`,
+//         }
+//       );
+
+//       if (!response.data.success) {
+//         throw new Error(response.data.message);
+//       }
+
+//       dispatch(
+//         setProducts({
+//           products: response.data.products,
+//           currentPage: response.data.currentPage,
+//           totalPages: response.data.totalPages,
+//         })
+//       );
+//     } catch (error) {
+//       console.error("GET ALL PRODUCTS ERROR............", error);
+//       toast.error(error.message || "Failed to fetch products.");
+//     }
+
+//     dispatch(setLoading(false));
+//     toast.dismiss(toastId);
+//   };
+// }
+export function getAllProducts(token, page = 1, query = {}) {
   return async (dispatch) => {
     const toastId = toast.loading("Loading products...");
     dispatch(setLoading(true));
-
     try {
+      // Convert arrays to comma-separated strings for query params
+      
+      console.log(query)
+
       const response = await apiConnector(
-        "GET",
-        `${GET_ALL_PRODUCTS_API}`,
-        {},
+        "POST",
+        `${GET_ALL_PRODUCTS_API}?page=${page}`,
+        query,
         {
           Authorization: `Bearer ${token}`,
         }
-
       );
-
-      console.log("GET ALL PRODUCTS RESPONSE............", response.data);
 
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
 
-     
       dispatch(
         setProducts({
           products: response.data.products,
@@ -85,7 +119,7 @@ export function getAllProducts( token) {
         })
       );
     } catch (error) {
-      console.log("GET ALL PRODUCTS ERROR............", error);
+      console.error("GET ALL PRODUCTS ERROR............", error);
       toast.error(error.message || "Failed to fetch products.");
     }
 
@@ -123,6 +157,7 @@ export function editProducts(token, data,) {
       console.log("EDIT PRODUCT ERROR............", error);
       toast.error(error.message || "Failed to update product");
     }
+    window.location.reload();
 
     dispatch(setLoading(false));
     toast.dismiss(toastId);
@@ -146,7 +181,7 @@ export function deleteProduct(token, productId) {
       );
 
       console.log("DELETE PRODUCTS RESPONSE............", response.data);
-
+      dispatch(delProduct(response.data.productId))
       if (!response.data.success) {
         throw new Error(response.data.message);
       }

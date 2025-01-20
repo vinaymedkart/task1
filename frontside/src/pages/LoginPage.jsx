@@ -90,7 +90,7 @@ const LoginPage = () => {
 
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <input
                   type="checkbox"
                   id="remember"
@@ -99,10 +99,10 @@ const LoginPage = () => {
                 <label htmlFor="remember" className="ml-2 text-sm text-sky-700">
                   Remember me
                 </label>
-              </div>
-              <Link to="/forgot-password" className="text-sm text-sky-600 hover:text-sky-800 transition-colors">
+              </div> */}
+              {/* <Link to="/forgot-password" className="text-sm text-sky-600 hover:text-sky-800 transition-colors">
                 Forgot password?
-              </Link>
+              </Link> */}
             </div>
 
             {/* Submit Button */}

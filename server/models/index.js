@@ -18,8 +18,8 @@ Tag.initModel(sequelize);
 Inventory.initModel(sequelize);
 
 // Category and Product
-Category.hasMany(Product, { foreignKey: "categoryId" });
-Product.belongsTo(Category, { foreignKey: "categoryId" });
+Category.hasMany(Product, { foreignKey: "categoryName", sourceKey: "name" });
+Product.belongsTo(Category, { foreignKey: "categoryName", targetKey: "name" });
 
 // Product and CartItem
 CartItem.belongsTo(Product, { foreignKey: "productId" });

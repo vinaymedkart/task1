@@ -8,11 +8,9 @@ class Order extends Model {
                     type: DataTypes.STRING,
                     allowNull: false,
                     references: {
-                        model: 'Users', // Name of the Users table
-                        key: 'email', // Column to reference
-                    },
-                    onDelete: 'CASCADE', // Cascade delete carts when a user is deleted
-                    onUpdate: 'CASCADE', //  Cascade updates to the email
+                        model: 'Users',
+                        key: 'email'
+                    }
                 },
                 cartId: {
                     type: DataTypes.INTEGER,

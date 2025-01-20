@@ -11,8 +11,8 @@ export const createCategory= async (req, res) => {
         }
 
         const category = await Category.create({ name, isActive });
-
-        return res.status(201).json({success:true, message: 'Category created successfully', category});
+        
+        return res.status(201).json({success:true, message: 'Category created successfully',        category});
     
     } catch (error) {
         console.error(error);
@@ -20,17 +20,17 @@ export const createCategory= async (req, res) => {
     }
 };
 
-
-export const getAllCategorys = async (req, res) => {
+export const getAllCategorys = async (req, res) => { 
     try {
-       
-        const categorys = await Category.findAll();
+        const categorys = await Category.findAll({
+            order: [['name', 'ASC']]
+        });
         
         if (categorys.length === 0) {
-            return res.status(404).json({success:true, message: 'No categorys found' });
+            return res.status(404).json({ success: true, message: 'No categories found' });
         }
 
-        return res.status(200).json({success:true,categorys});
+        return res.status(200).json({ success: true, categorys });
     
     } catch (error) {
         console.error(error);

@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";dotenv.config();
 import fileUpload from "express-fileupload"; 
 
-import { cloudinaryConnect } from "./config/cloudinary.js";
+// import { cloudinaryConnect } from "./config/cloudinary.js";
 import { initializeDatabase } from './postgres/sequelize.js';
 
 import UserRoutes from "./routes/User.js";
@@ -35,7 +35,7 @@ app.use(
         allowedHeaders: "Content-Type, Authorization",  // Allow Authorization header
     })
 );
-cloudinaryConnect();
+// cloudinaryConnect();
 (async () => {
     await initializeDatabase(); // Ensure the database is ready before starting the server
     app.listen(PORT, () => {

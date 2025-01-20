@@ -8,6 +8,7 @@ class Category extends Model {
                 name: {
                     type: DataTypes.STRING,
                     allowNull: false,
+                    primaryKey: true, 
                 },
                 isActive: {
                     type: DataTypes.BOOLEAN,
@@ -17,6 +18,8 @@ class Category extends Model {
             {
                 sequelize,
                 modelName: "Category",
+                 tableName: "Category",
+                timestamps: false, // Optional: if you don't want createdAt/updatedAt columns
             }
         );
     }

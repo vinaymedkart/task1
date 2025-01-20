@@ -1,24 +1,27 @@
 import {Cart,Order,CartItem ,Product, User} from '../models/index.js';
 import { Op,Sequelize } from 'sequelize';
 
-
-export const placeOrder= async (req, res) => {
+export const placeOrder = async (req, res) => {
     try {
+        const { email } = req.user;
+        const userEmail = email;
 
-        const {email} = req.user;
-        const userEmail=email
-
-        
+        // Fetch the latest cart for the user
         const currentCart = await Cart.findOne({
             where: { UserMail: userEmail },
-            include: [{
-                model: CartItem,
-                as: 'items',
-                include: [{
-                    model: Product,
-                    attributes: ['salesPrice', 'name', 'wsCode']
-                }]
-            }]
+            include: [
+                {
+                    model: CartItem,
+                    as: 'items',
+                    include: [
+                        {
+                            model: Product,
+                            attributes: ['salesPrice', 'name', 'wsCode']
+                        }
+                    ]
+                }
+            ],
+            order: [['createdAt', 'DESC']] // Order by createdAt to get the most recent cart
         });
 
         if (!currentCart) {
@@ -29,17 +32,18 @@ export const placeOrder= async (req, res) => {
         }
 
         if (!currentCart.items || currentCart.items.length === 0) {
-            await t.rollback();
             return res.status(400).json({
                 success: false,
                 message: "Cart is empty"
             });
         }
 
+        // Calculate the total amount for the order
         const totalAmount = currentCart.items.reduce((sum, item) => {
             return sum + (item.Product.salesPrice * item.quantity);
         }, 0);
-        console.log(currentCart.id)
+
+        // Create an order from the cart
         const order = await Order.create({
             UserMail: userEmail,
             cartId: currentCart.id,
@@ -47,11 +51,10 @@ export const placeOrder= async (req, res) => {
             status: "Pending"
         });
 
+        // Create a new cart for the user
         const newCart = await Cart.create({
             UserMail: userEmail
         });
-
-        
 
         return res.status(200).json({
             success: true,
@@ -67,7 +70,6 @@ export const placeOrder= async (req, res) => {
         });
 
     } catch (error) {
-        
         console.error("Error in placeOrder:", error);
         return res.status(500).json({
             success: false,
@@ -75,11 +77,12 @@ export const placeOrder= async (req, res) => {
             error: error.message
         });
     }
-}
+};
 
 export const getOrderHistory = async (req, res) => {
     try {
         const { email } = req.user;
+
         
         // Fetch pending orders
         const pendingOrders = await Order.findAll({
@@ -122,6 +125,7 @@ export const getOrderHistory = async (req, res) => {
             }],
             order: [['createdAt', 'DESC']]
         });
+// console.log(pendingOrders)
 
         // Format orders for response
         const formatOrder = (order) => ({
@@ -133,8 +137,8 @@ export const getOrderHistory = async (req, res) => {
                 productName: item.Product.name,
                 productCode: item.Product.wsCode,
                 quantity: item.quantity,
-                price: item.Product.salesPrice,
-                subtotal: item.quantity * item.Product.salesPrice
+                price: item.atPrice,
+                subtotal: item.quantity * item.atPrice
             })) || []
         });
 
@@ -185,7 +189,6 @@ export const getOrderHistory = async (req, res) => {
             });
         }
 
-        // Generic error response
         return res.status(500).json({
             success: false,
             message: "Failed to fetch order history",
@@ -200,7 +203,7 @@ export const updateOrderStatus = async (req, res) => {
         const { orderId } = req.body;
         const { status } = req.body;
 
-        // Validate status
+        
         if (!['Confirmed', 'Cancelled'].includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -272,20 +275,25 @@ export const getAllPendingOrders = async (req, res) => {
             ],
             order: [['createdAt', 'DESC']]
         });
-
+// console.log()
         const formattedOrders = pendingOrders.map(order => {
             const orderData = order.get({ plain: true });
+            orderData.Cart?.items?.forEach(item => {
+                console.log(item.atPrice)
+                return item;
+            })
             return {
                 orderId: orderData.id,
                 status: orderData.status,
                 totalAmount: orderData.totalAmount || 0,
                 createdAt: orderData.createdAt,
+                
                 items: orderData.Cart?.items?.map(item => ({
                     productName: item?.Product?.name || 'Unknown Product',
                     productCode: item?.Product?.wsCode || 'N/A',
-                    price: item?.Product?.salesPrice || 0,
-                    quantity: item?.quantity || 0,
-                    subtotal: (item?.Product?.salesPrice || 0) * (item?.quantity || 0)
+                    price: item?.atPrice || 0,
+                    quantity: item?.quantity || 0,          
+                    subtotal: (item?.atPrice || 0) * (item?.quantity || 0)
                 })) || []
             };
         });

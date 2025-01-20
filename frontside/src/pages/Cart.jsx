@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, CreditCard } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../services/middlewares/cart';
+import { addToCart, removeFromCart } from '../services/middlewares/cart';
 import { placeOrder } from '../services/middlewares/order';
 
 const Cart = () => {
@@ -78,22 +78,33 @@ const Cart = () => {
     const removeItem = async (wsCode) => {
         const userEmail = localStorage.getItem('email') || email;
         if (!userEmail) return;
-
+    
         try {
-            let cartData = JSON.parse(localStorage.getItem("usersData")) || {};
-            if (cartData[userEmail]) {
-                delete cartData[userEmail][wsCode];
-                if (Object.keys(cartData[userEmail]).length === 0) {
-                    delete cartData[userEmail];
+            // First remove from backend
+            const response = await dispatch(removeFromCart(token, wsCode));
+            
+            if (response.success) {
+                // If backend removal successful, update localStorage
+                let cartData = JSON.parse(localStorage.getItem("usersData")) || {};
+                if (cartData[userEmail]) {
+                    delete cartData[userEmail][wsCode];
+    
+                    if (Object.keys(cartData[userEmail]).length === 0) {
+                        delete cartData[userEmail];
+                    }
+    
+                    localStorage.setItem("usersData", JSON.stringify(cartData));
                 }
-                localStorage.setItem("usersData", JSON.stringify(cartData));
-                await fetchCartItems(); // Refresh cart items with API data
+    
+                // Update local state
+                setCartItems(prevItems => prevItems.filter(item => item.wsCode !== wsCode));
             }
         } catch (error) {
             console.error('Error removing item:', error);
+            // Optionally refresh the entire cart to ensure consistency
+            await fetchCartItems();
         }
-    };
-
+    };    
     const calculateTotal = () => {
         return cartItems.reduce((total, item) => total + (item.salesPrice * item.quantity), 0);
     };
@@ -103,9 +114,9 @@ const Cart = () => {
         try {
             const userEmail = localStorage.getItem('email') || email;
             let cartData = JSON.parse(localStorage.getItem("usersData")) || {};
+            await dispatch(placeOrder(token))
             delete cartData[userEmail];
             localStorage.setItem("usersData", JSON.stringify(cartData));
-            await dispatch(placeOrder(token))
             
             
         } catch (error) {

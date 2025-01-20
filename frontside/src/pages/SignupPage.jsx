@@ -167,7 +167,7 @@ const SignupPage = () => {
               </div>
             </div>
 
-            {/* Terms and Conditions */}
+            {/* Terms and Conditions
             <div className="flex items-start">
               <input
                 type="checkbox"
@@ -185,7 +185,7 @@ const SignupPage = () => {
                   Privacy Policy
                 </Link>
               </label>
-            </div>
+            </div> */}
 
             {/* Submit Button */}
             <button

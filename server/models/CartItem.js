@@ -21,7 +21,15 @@ class CartItem extends Model {
                 createdAt:{
                     type: DataTypes.DATE,
                     defaultValue:Date.now()
-                }
+                },
+                atPrice: {
+                    type: DataTypes.FLOAT,
+                    allowNull: false,
+                    validate: {
+                        isFloat: true,
+                        min: 0.01, // Non-negative numbers greater than 0
+                    },
+                },
             },
             {
                 sequelize,

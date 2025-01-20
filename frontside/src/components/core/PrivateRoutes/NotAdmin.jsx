@@ -8,9 +8,9 @@ const NotAdmin = ({ children }) => {
     const token = useSelector((state) => state.auth.token);
     const verifyData = useSelector((state) => state.auth.data);
 
-    if (!token || !verifyData) {
-        return <Navigate to="/login" />;
-    }
+    if (token && verifyData) {
+       
+    
 
     try {
         const decodedToken = jwtDecode(token);
@@ -24,8 +24,9 @@ const NotAdmin = ({ children }) => {
         } 
     } catch (error) {
         console.error("Authentication error:", error);
-        return <Navigate to="/login" />;
+        
     }
+}
 };
 
 export default NotAdmin;

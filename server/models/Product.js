@@ -8,7 +8,6 @@ class Product extends Model {
                     type: DataTypes.STRING,
                     allowNull: false,
                     validate: {
-                        is: /^[a-zA-Z\s]+$/, // Only contains strings
                         notEmpty: true,
                     },
                 },
@@ -16,7 +15,7 @@ class Product extends Model {
                     type: DataTypes.INTEGER,
                     allowNull: false,
                     primaryKey: true, // Primary key
-                    autoIncrement: true, // auto-increment
+                    autoIncrement: true, // Auto-increment
                     validate: {
                         isInt: true,
                         min: 0,
@@ -52,7 +51,7 @@ class Product extends Model {
                     validate: {
                         isImageFormat(value) {
                             value.forEach((img) => {
-                                if (!/\.(png|jpeg|webp|jpg)$/i.test(img)) {
+                                if (!/\.(png|jpeg|jpg|webp)$/i.test(img)) {
                                     throw new Error(
                                         "Images must be .png, .jpeg, or .webp"
                                     );
@@ -61,10 +60,10 @@ class Product extends Model {
                         },
                     },
                 },
-                categoryId: {
-                    type: DataTypes.INTEGER, // Foreign key
+                categoryName: {
+                    type: DataTypes.STRING,
                     allowNull: false,
-                }
+                },
             },
             {
                 sequelize,

@@ -1,34 +1,42 @@
-import { Tag, Product, Category, Inventory, ProductTag } from '../models/index.js';
-import { uploadImageToCloudinary } from "../utils/imageUploader.js";
+import { Tag, Product, Category, Inventory, ProductTag,sequelize } from '../models/index.js';
+import { Op } from 'sequelize';
+
+export const initialCall = async (req, res) => {
+
+
+    //keep empty for now
+}
+
+
+
+
+
 export const createProduct = async (req, res) => {
     try {
-        const { name, salesPrice, mrp, packageSize, tags, categoryId, sell, stock } = req.body;
-        const files = req.files?.images; // Access uploaded files
-
-        if (!name || !salesPrice || !mrp || !packageSize || !tags || !categoryId || !files || stock === undefined || sell === undefined) {
+        const { name, salesPrice, mrp, packageSize, tags, categoryName, sell=false, stock, images } = req.body;
+        
+        // if(sell)sell=false
+        if (!name || !salesPrice || !mrp || !packageSize || !tags || !categoryName || !stock || !sell || !images) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-        // Validate `tags` array
-        const parsedTags = JSON.parse(tags); // Parse tags if they are sent as a string
+        // Parse and validate tags
+        const parsedTags = Array.isArray(tags) ? tags : JSON.parse(tags);
         if (!Array.isArray(parsedTags) || parsedTags.length === 0) {
             return res.status(400).json({ message: "Tags array is required and cannot be empty" });
         }
 
         // Check if the category exists
-        const existingCategory = await Category.findByPk(categoryId);
+        const existingCategory = await Category.findByPk(categoryName);
         if (!existingCategory) {
-            return res.status(404).json({ message: `Category with id ${categoryId} not found` });
+            return res.status(404).json({ message: `Category with name ${categoryName} not found` });
         }
 
-        // Handle single or multiple file uploads
-        const fileArray = Array.isArray(files) ? files : [files];
-        const uploadedImages = await Promise.all(
-            fileArray.map(async (file) => {
-                const uploaded = await uploadImageToCloudinary(file, "task1");
-                return uploaded.secure_url; // Collect secure URLs
-            })
-        );
+        // Parse and validate images
+        const parsedImages = Array.isArray(images) ? images : JSON.parse(images);
+        if (!Array.isArray(parsedImages) || parsedImages.length === 0) {
+            return res.status(400).json({ message: "At least one image is required" });
+        }
 
         // Create the product
         const newProduct = await Product.create({
@@ -36,18 +44,20 @@ export const createProduct = async (req, res) => {
             salesPrice,
             mrp,
             packageSize,
-            images: uploadedImages,
-            tags: [],
-            categoryId,
+            images: parsedImages,
+            categoryName,
         });
 
-        // Add tags to ProductTag
+        // Add tags to Product
         const tagInstances = await Tag.findAll({
-            where: { name: parsedTags },
+            where: { name: parsedTags }, // Match tags by name
         });
+
+        if (tagInstances.length !== parsedTags.length) {
+            return res.status(400).json({ message: "Some tags are invalid or do not exist in the database" });
+        }
 
         await newProduct.addTags(tagInstances);
-
         // Add product to inventory
         await Inventory.create({
             wsCode: newProduct.wsCode,
@@ -68,9 +78,55 @@ export const createProduct = async (req, res) => {
         });
     }
 };
+
 export const getAllProducts = async (req, res) => {
     try {
-        const { rows: products, count: totalProducts } = await Product.findAndCountAll({
+        const page = parseInt(req.query.page || 1, 10);
+        const limit = 6;
+        const offset = (page - 1) * limit;
+        const { searchbar = "", tags = [], categorys = [] } = req.body;
+
+// console.log(searchbar)
+// console.log(tags)
+// console.log(categorys)
+
+
+        // Initialize the base whereClause
+        const whereClause = {
+            [Op.and]: [],
+        };
+
+        // Adding searchbar condition (search by name or wsCode)
+        if (searchbar) {
+            // Check if searchbar contains only numbers
+            const isNumeric = /^\d+$/.test(searchbar);
+            
+            if (isNumeric) {
+                whereClause[Op.and].push({
+                    [Op.or]: [
+                        { name: { [Op.iLike]: `%${searchbar}%` } },
+                        { wsCode: parseInt(searchbar, 10) },
+                    ],
+                });
+            } else {
+                whereClause[Op.and].push({
+                    name: { [Op.iLike]: `%${searchbar}%` },
+                });
+            }
+        }
+
+        // Adding category filter - Exact match
+        if (categorys?.length > 0) {
+            whereClause[Op.and].push({
+                categoryName: {
+                    [Op.in]: categorys,
+                },
+            });
+        }
+
+        // Base query configuration
+        const queryConfig = {
+            distinct: true,
             include: [
                 {
                     model: Inventory,
@@ -79,24 +135,55 @@ export const getAllProducts = async (req, res) => {
                 },
                 {
                     model: Category,
-                    attributes: ["id", "name", "isActive"],
+                    attributes: ["name", "isActive"],
+                    where: { isActive: true },
                 },
                 {
                     model: Tag,
                     attributes: ["name"],
-                    through: { attributes: [] }, // Exclude junction table attributes
+                    through: { attributes: [] },
                 },
             ],
-        });
+            where: whereClause,
+            order: [["createdAt", "DESC"]],
+            limit,
+            offset,
+        };
 
-        if (!products || products.length === 0) {
-            return res.status(404).json({
-                success: true,
-                products: [],
-                message: "No products found.",
+        // Add tag filtering if tags are provided
+        if (tags?.length > 0) {
+            // Find products that have ALL specified tags
+            const tagWhereClause = {
+                name: {
+                    [Op.in]: tags,
+                },
+            };
+
+            // Add to the includes
+            const tagInclude = queryConfig.include.find(inc => inc.model === Tag);
+            tagInclude.where = tagWhereClause;
+
+            // Add subquery to ensure ALL tags are present
+            const subQuery = `
+                SELECT "ProductTags"."wsCode"
+                FROM "ProductTags"
+                JOIN "Tags" ON "ProductTags"."tagId" = "Tags"."tagId"
+                WHERE "Tags"."name" IN (${tags.map(tag => `'${tag}'`).join(',')})
+                GROUP BY "ProductTags"."wsCode"
+                HAVING COUNT(DISTINCT "Tags"."name") = ${tags.length}
+            `;
+
+            whereClause[Op.and].push({
+                wsCode: {
+                    [Op.in]: sequelize.literal(`(${subQuery})`),
+                },
             });
         }
 
+        // Query the database
+        const { rows: products, count: totalProducts } = await Product.findAndCountAll(queryConfig);
+
+        // Format the response
         const formattedProducts = products.map((product) => ({
             wsCode: product.wsCode,
             name: product.name,
@@ -104,7 +191,6 @@ export const getAllProducts = async (req, res) => {
             mrp: product.mrp,
             packageSize: product.packageSize,
             images: product.images,
-            categoryId: product.Category?.id || null,
             categoryName: product.Category?.name || null,
             sell: product.Inventory?.isActive || false,
             stock: product.Inventory?.stock || 0,
@@ -115,38 +201,36 @@ export const getAllProducts = async (req, res) => {
             success: true,
             products: formattedProducts,
             totalProducts,
-            totalPages: Math.ceil(totalProducts),
-            currentPage: parseInt(req.query.page || 1, 10),
+            totalPages: Math.ceil(totalProducts / limit),
+            currentPage: page,
             message: "Products retrieved successfully.",
         });
     } catch (error) {
         console.error("Error fetching products:", error);
-
         return res.status(500).json({
             success: false,
             message: "Failed to retrieve products. Please try again later.",
+            error: error.message,
         });
     }
 };
 
-
-
-
 export const updateProduct = async (req, res) => {
     try {
-        const { 
-            name, 
-            salesPrice, 
-            mrp, 
-            packageSize, 
-            tags, 
-            categoryId, 
-            sell, 
+        const {
+            name,
+            salesPrice,
+            mrp,
+            packageSize,
+            tags,
+            categoryName,
+            sell,
             stock,
-            wsCode 
+            wsCode,
+            images
         } = req.body;
-        
-        const files = req.files?.images;
+
+       
 
         // Check if the product exists with all its associations
         const existingProduct = await Product.findByPk(wsCode, {
@@ -158,43 +242,39 @@ export const updateProduct = async (req, res) => {
         });
 
         if (!existingProduct) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: `Product with wsCode ${wsCode} not found` 
+                message: `Product with wsCode ${wsCode} not found`
             });
         }
 
         // Validate tags array
         const parsedTags = Array.isArray(tags) ? tags : [];
         if (tags && (!Array.isArray(parsedTags) || parsedTags.length === 0)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: "Tags array must be valid and cannot be empty." 
+                message: "Tags array must be valid and cannot be empty."
             });
         }
 
         // Validate category
-        if (categoryId) {
-            const existingCategory = await Category.findByPk(categoryId);
+        if (categoryName) {
+            const existingCategory = await Category.findByPk(categoryName);
             if (!existingCategory) {
-                return res.status(404).json({ 
+                return res.status(404).json({
                     success: false,
-                    message: `Category with id ${categoryId} not found` 
+                    message: `Category with id ${categoryName} not found`
                 });
             }
         }
 
         // Handle image uploads
-        let uploadedImages = existingProduct.images || [];
-        if (files) {
-            const fileArray = Array.isArray(files) ? files : [files];
-            const newUploadedImages = await Promise.all(
-                fileArray.map(async (file) => {
-                    const uploaded = await uploadImageToCloudinary(file, "task1");
-                    return uploaded.secure_url;
-                })
-            );
-            uploadedImages = [...uploadedImages, ...newUploadedImages];
+        const parsedImages = Array.isArray(images) ? images : [];
+        if (parsedImages && (!Array.isArray(parsedImages) || parsedImages.length === 0)) {
+            return res.status(400).json({
+                success: false,
+                message: "Images array must be valid and cannot be empty."
+            });
         }
 
         // Update product
@@ -203,8 +283,8 @@ export const updateProduct = async (req, res) => {
             salesPrice: salesPrice || existingProduct.salesPrice,
             mrp: mrp || existingProduct.mrp,
             packageSize: packageSize || existingProduct.packageSize,
-            images: uploadedImages,
-            categoryId: categoryId || existingProduct.categoryId,
+            images: parsedImages,
+            categoryName: categoryName || existingProduct.categoryName,
         });
 
         // Update tags
@@ -239,7 +319,7 @@ export const updateProduct = async (req, res) => {
 
         // Format response to match frontend structure
         const formattedResponse = {
-            categoryId: updatedProduct.categoryId,
+            categoryName: updatedProduct.categoryName,
             images: updatedProduct.images.map(imageUrl => ({
                 name: imageUrl.split('/').pop(), // Extract filename from URL
                 // Mock these values since they're not stored in backend
@@ -279,6 +359,7 @@ export const deleteProduct = async (req, res) => {
     try {
         const { productId } = req.body;
 
+        console.log(req.header("Authorization"))
         // Check if the product exists
         const product = await Product.findByPk(productId, {
             include: [{ model: Inventory }]
@@ -308,7 +389,8 @@ export const deleteProduct = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Failed to delete product",
-            error: error.message
+            error: error.message,
+            
         });
     }
 };

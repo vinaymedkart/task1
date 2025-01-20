@@ -18,6 +18,7 @@ export const addCartItem = async (req, res) => {
             defaults: { UserMail: email },
             order: [['createdAt', 'DESC']]
         });
+        console.log(cart.id);
 
         // Process each item in the batch
         const cartItemPromises = items.map(async ({ productId, quantity }) => {
@@ -31,12 +32,13 @@ export const addCartItem = async (req, res) => {
                 const [cartItem, created] = await CartItem.findOrCreate({
                     where: { 
                         cartId: cart.id, 
-                        productId: product.wsCode // Use wsCode as it's the primary key
+                        productId: product.wsCode 
                     },
                     defaults: {
                         cartId: cart.id,
                         productId: product.wsCode,
-                        quantity
+                        quantity,
+                        atPrice: product.salesPrice
                     }
                 });
 

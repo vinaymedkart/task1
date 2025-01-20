@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 const TagModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const [formData, setFormData] = useState(initialData || {
     name: '',
-    description: '',
     active: true
   });
 
@@ -72,7 +71,7 @@ const TagModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
       
 
             {/* Active Status */}
-            <div className="flex items-center">
+            {/* <div className="flex items-center">
               <input
                 type="checkbox"
                 checked={formData.active}
@@ -82,7 +81,7 @@ const TagModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
               <label className="ml-2 block text-sm text-gray-700">
                 Active
               </label>
-            </div>
+            </div> */}
 
             {/* Submit Buttons */}
             <div className="flex justify-end space-x-4">

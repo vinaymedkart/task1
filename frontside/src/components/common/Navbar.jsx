@@ -1,18 +1,28 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setSignupData, setToken } from "../../redux/slices/auth";
-import ProfileImage from "../../assets/profile.png";
-import { IoMdCart } from "react-icons/io";
+import CartIcon  from "../../assets/cart.png"
 import OrderIcon from "../../assets/order.png";
 import Checklist from "../../assets/checklist.png";
 import NotAdmin from "../core/PrivateRoutes/NotAdmin";
 import Admin from "../core/PrivateRoutes/Admin";
+import { getAllCategorys } from "../../services/middlewares/category";
+import { getAllTags } from "../../services/middlewares/tag";
+import { getAllProducts } from "../../services/middlewares/product";
 
 const Navbar = () => {
   const { token } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  useEffect(() => {
+    if (token) {
+      console.log("Navbar")
+      dispatch(getAllTags(token));
+      dispatch(getAllCategorys(token));
+     
+    }
+  }, []);
 
   const logout = () => {
     dispatch(setSignupData(null));
@@ -20,7 +30,7 @@ const Navbar = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("data");
     localStorage.removeItem("email");
-    navigate("/auth/login");
+    navigate("/login");
     window.location.reload();
   };
 
@@ -45,15 +55,17 @@ const Navbar = () => {
 
           {/* Navigation Links */}
           <div className="flex items-center space-x-4">
-            <NavLink to="/" className={getNavLinkClass} title="Go to Home">
+
+            {token&&<NavLink to="/" className={getNavLinkClass} title="Go to Home">
               Home
             </NavLink>
+            }
             <NotAdmin>
               <NavLink to="/orders" className={getNavLinkClass} title="View Orders">
                 <img src={OrderIcon} className="h-6 w-6" alt="Order Icon" />
               </NavLink>
               <NavLink to="/cart" className={getNavLinkClass} title="View Cart">
-                <IoMdCart className="h-7 w-7" />
+              <img src={CartIcon} className="h-8 w-8" alt="carticon" />
               </NavLink>
             </NotAdmin>
             <Admin>

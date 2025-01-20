@@ -1,58 +1,262 @@
 import React, { useEffect, useState } from 'react';
-import { Search, X, Upload, Tag,DeleteIcon } from 'lucide-react';
+import { Search, X, Upload, Tag } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllCategorys } from '../../services/middlewares/category';
 import { getAllTags } from '../../services/middlewares/tag';
 
 const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
+  const dispatch = useDispatch();
+  const { token } = useSelector((state) => state.auth);
+  const { category, tag } = useSelector((state) => state.appdata);
+
   const [formData, setFormData] = useState({
     name: '',
-    salesPrice: '',
-    mrp: '',
-    packageSize: '',
+    salesPrice: 0,
+    mrp: 0,
+    packageSize: 0,
     images: [],
-    categoryId: '',
+    categoryName: '',
     sell: false,
     stock: 0,
     tags: [],
   });
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [previewUrls, setPreviewUrls] = useState([]);
-  const [tagSearch, setTagSearch] = useState('');
-  const [filteredTags, setFilteredTags] = useState([]);
-  const [errors, setErrors] = useState({});
 
-  const { token } = useSelector((state) => state.auth);
-  const { tag, category } = useSelector((state) => state.appdata);
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    dispatch(getAllTags(token));
-    dispatch(getAllCategorys(token));
-  }, []);
+  const [errors, setErrors] = useState({
+    name: '',
+    salesPrice: '',
+    mrp: '',
+    packageSize: '',
+    images: '',
+    categoryName: '',
+    stock: '',
+    tags: '',
+  });
 
   useEffect(() => {
     if (initialData) {
-      setFormData({
-        name: initialData.name || '',
-        salesPrice: initialData.salesPrice || '',
-        mrp: initialData.mrp || '',
-        packageSize: initialData.packageSize || '',
-        images: initialData.images || [],
-        categoryId: initialData.categoryId || '',
-        sell: initialData.sell ?? true,
-        stock: initialData.stock || 0,
-        tags: initialData.tags || [],
-      });
-
-      // Set preview URLs for existing images
-      if (initialData.images?.length > 0) {
-        setPreviewUrls(initialData.images);
-        // Don't reset selected files for existing images
-        setSelectedFiles([]);
-      }
+      setFormData({ ...initialData });
+      setErrors({});
     }
   }, [initialData]);
+
+  const [tagSearch, setTagSearch] = useState('');
+  const [filteredTags, setFilteredTags] = useState([]);
+
+  
+  const validateField = (name, value, allValues = formData) => {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) return 'Product name is required';
+        if (value.length < 3) return 'Product name must be at least 3 characters';
+        if (value.length > 100) return 'Product name must be less than 100 characters';
+        return '';
+
+      case 'salesPrice':
+        if (!value && value !== 0) return 'Sales price is required';
+        const salesPriceNum = Number(value);
+        if (isNaN(salesPriceNum) || salesPriceNum <= 0) return 'Sales price must be greater than 0';
+        const mrpNum = Number(allValues.mrp);
+        if (allValues.mrp && !isNaN(mrpNum) && salesPriceNum > mrpNum) {
+          return 'Sales price cannot be greater than MRP';
+        }
+        return '';
+
+      case 'mrp':
+        if (!value && value !== 0) return 'MRP is required';
+        const mrpValue = Number(value);
+        if (isNaN(mrpValue) || mrpValue <= 0) return 'MRP must be greater than 0';
+        const salesPrice = Number(allValues.salesPrice);
+        if (allValues.salesPrice && !isNaN(salesPrice) && mrpValue < salesPrice) {
+          return 'MRP cannot be less than sales price';
+        }
+        return '';
+
+      case 'packageSize':
+        if (!value && value !== 0) return 'Package size is required';
+        const packageNum = parseInt(value);
+        if (isNaN(packageNum) || packageNum <= 0) return 'Package size must be greater than 0';
+        if (!Number.isInteger(packageNum)) return 'Package size must be a whole number';
+        return '';
+
+      case 'categoryName':
+        if (!value) return 'Category is required';
+        return '';
+
+      case 'stock':
+        if (value === '') return '';
+        const stockNum = parseInt(value);
+        if (isNaN(stockNum) || stockNum < 0) return 'Stock cannot be negative';
+        if (!Number.isInteger(stockNum)) return 'Stock must be a whole number';
+        return '';
+
+      case 'images':
+        if (!value || value.length === 0) return 'At least one image is required';
+        if (value.length > 3) return 'Maximum 3 images allowed';
+        return '';
+
+      case 'tags':
+        if (!value || value.length === 0) return 'At least one tag is required';
+        return '';
+
+      default:
+        return '';
+    }
+  };
+
+  const handleOnChange = (e) => {
+    const { name, value } = e.target;
+    const newFormData = {
+      ...formData,
+      [name]: value,
+    };
+    
+    setFormData(newFormData);
+
+    if (name === 'mrp' || name === 'salesPrice') {
+      const salesPriceError = validateField('salesPrice', newFormData.salesPrice, newFormData);
+      const mrpError = validateField('mrp', newFormData.mrp, newFormData);
+      
+      setErrors(prev => ({
+        ...prev,
+        salesPrice: salesPriceError,
+        mrp: mrpError,
+      }));
+    } else {
+      const error = validateField(name, value, newFormData);
+      setErrors(prev => ({
+        ...prev,
+        [name]: error,
+      }));
+    }
+  };
+  const uploadImages = async (files) => {
+    const urls = [];
+    const allowedExtensions = ['png', 'jpeg', 'webp'];
+  
+    try {
+      for (const file of files) {
+        // Check if file size is greater than 5MB
+        if (file.size > 5000000) {
+          setErrors(prev => ({
+            ...prev,
+            images: 'Each image must be less than 5MB',
+          }));
+          return [];
+        }
+  
+        // Check file extension
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(fileExtension)) {
+          setErrors(prev => ({
+            ...prev,
+            images: 'Only PNG, JPEG, and WEBP image formats are allowed',
+          }));
+          return [];
+        }
+  
+        const form = new FormData();
+        form.append('file', file);
+        form.append('upload_preset', 'firstpresetholyvision');
+        const response = await fetch('https://api.cloudinary.com/v1_1/dkuddiipk/image/upload', {
+          method: 'POST',
+          body: form,
+        });
+        const data = await response.json();
+        urls.push(data.secure_url);
+      }
+    } catch (error) {
+      setErrors(prev => ({
+        ...prev,
+        images: 'Error uploading images. Please try again.',
+      }));
+    }
+    return urls;
+  };
+  
+  const handleImageUpload = async (e) => {
+    const files = e.target.files;
+  
+    if (files.length + formData.images.length > 3) {
+      setErrors(prev => ({
+        ...prev,
+        images: 'Maximum 3 images allowed',
+      }));
+      return;
+    }
+
+    const uploadedUrls = await uploadImages(files);
+    if (uploadedUrls.length > 0) {
+      const newImages = [...formData.images, ...uploadedUrls];
+      setFormData(prev => ({
+        ...prev,
+        images: newImages,
+      }));
+      setErrors(prev => ({
+        ...prev,
+        images: validateField('images', newImages),
+      }));
+    }
+  };
+
+  const removeImage = (index) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData(prev => ({
+      ...prev,
+      images: newImages,
+    }));
+    setErrors(prev => ({
+      ...prev,
+      images: validateField('images', newImages),
+    }));
+  };
+
+  const handleTagAdd = (selectedTag) => {
+    const newTags = [...formData.tags, selectedTag];
+    setFormData(prev => ({
+      ...prev,
+      tags: newTags,
+    }));
+    setErrors(prev => ({
+      ...prev,
+      tags: validateField('tags', newTags),
+    }));
+    setTagSearch('');
+  };
+
+  const handleTagRemove = (tagToRemove) => {
+    const newTags = formData.tags.filter((tag) => tag !== tagToRemove);
+    setFormData(prev => ({
+      ...prev,
+      tags: newTags,
+    }));
+    setErrors(prev => ({
+      ...prev,
+      tags: validateField('tags', newTags),
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, formData[key]);
+      if (error) newErrors[key] = error;
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSubmit(formData);
+    } else {
+      // Scroll to first error
+      const firstError = document.querySelector('.text-red-500');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
 
   useEffect(() => {
     if (tagSearch.trim()) {
@@ -66,143 +270,6 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
       setFilteredTags([]);
     }
   }, [tagSearch, tag, formData.tags]);
-
-  useEffect(() => {
-    return () => {
-      previewUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [previewUrls]);
-
-  const validateImageFormat = (file) => {
-    const validFormats = ['image/png', 'image/jpeg', 'image/webp', 'image/jpg'];
-    return validFormats.includes(file.type);
-  };
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files).slice(0, 10 - selectedFiles.length);
-    const invalidFiles = files.filter((file) => !validateImageFormat(file));
-    if (invalidFiles.length > 0) {
-      setErrors((prev) => ({
-        ...prev,
-        images: 'Only .png, .jpeg, .jpg, and .webp formats are allowed',
-      }));
-      return;
-    }
-    setErrors((prev) => ({ ...prev, images: undefined }));
-    const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
-    setSelectedFiles((prev) => [...prev, ...files]);
-    setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
-  };
-
-  const removeImage = (index) => {
-    URL.revokeObjectURL(previewUrls[index]);
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleTagAdd = (selectedTag) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: [...prev.tags, selectedTag],
-    }));
-    setTagSearch('');
-  };
-
-  const handleTagRemove = (tagToRemove) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((tag) => tag !== tagToRemove),
-    }));
-  };
-  const validateNumericInput = (value, field) => {
-    const numValue = parseFloat(value);
-
-    switch (field) {
-      case 'salesPrice':
-      case 'mrp':
-        if (isNaN(numValue) || numValue < 0) return '';
-        return Number(numValue.toFixed(2));
-
-      case 'packageSize':
-        if (isNaN(numValue) || numValue < 0) return '';
-        return Number(numValue.toFixed(3));
-
-      case 'stock':
-        if (isNaN(numValue) || numValue < 0) return '';
-        return Math.floor(numValue);
-
-      default:
-        return value;
-    }
-  }
-  const validate = (data) => {
-    const newErrors = {};
-    if (!data.name || data.name.length < 2 || data.name.length > 100) {
-      newErrors.name = 'Name must be between 2 and 100 characters';
-    }
-
-    const salesPrice = parseFloat(data.salesPrice);
-    const mrp = parseFloat(data.mrp);
-    const packageSize = parseFloat(data.packageSize);
-
-    if (isNaN(salesPrice) || salesPrice < 0.01 || salesPrice > 999999.99) {
-      newErrors.salesPrice = 'Sales price must be between 0.01 and 999,999.99';
-    }
-
-    if (isNaN(mrp) || mrp < salesPrice || mrp > 999999.99) {
-      newErrors.mrp = 'MRP must be greater than sales price and less than 999,999.99';
-    }
-
-    if (isNaN(packageSize) || packageSize < 0.001 || packageSize > 9999.999) {
-      newErrors.packageSize = 'Package size must be between 0.001 and 9,999.999';
-    }
-
-    if ((!selectedFiles.length && !previewUrls.length) ||
-      (selectedFiles.length + previewUrls.length) > 10) {
-      newErrors.images = 'At least one image is required and maximum 10 images are allowed';
-    }
-
-    if (!data.categoryId) {
-      newErrors.categoryId = 'Category is required';
-    }
-
-    if (!data.tags.length) {
-      newErrors.tags = 'At least one tag is required';
-    }
-
-    return newErrors;
-  };
-
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const validationErrors = validate(formData);
-    if (Object.keys(validationErrors).length === 0) {
-      const submissionData = {
-        wsCode: initialData?.wsCode,
-        name: formData.name,
-        salesPrice: Number(formData.salesPrice),
-        mrp: Number(formData.mrp),
-        packageSize: Number(formData.packageSize),
-        categoryId: formData.categoryId,
-        sell: formData.sell,
-        stock: Number(formData.stock),
-        tags: formData.tags,
-        images: selectedFiles.length > 0 ? selectedFiles : previewUrls,
-      };
-      onSubmit(submissionData);
-    } else {
-      setErrors(validationErrors);
-    }
-  };
-  const handleInputChange = (e, field) => {
-    const value = e.target.value;
-    const validatedValue = validateNumericInput(value, field);
-    setFormData(prev => ({
-      ...prev,
-      [field]: validatedValue
-    }));
-  };
 
   if (!isOpen) return null;
 
@@ -226,7 +293,7 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
             </div>
 
             {/* Form Content */}
-            <div className="p-6">
+            <div className="p-6 space-y-6">
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -234,8 +301,9 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                      name="name"
+                      onChange={handleOnChange}
+                      className={`w-full border ${errors.name ? 'border-red-500' : 'border-sky-200'} p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent`}
                       placeholder="Enter product name"
                     />
                     {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
@@ -246,12 +314,10 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     <input
                       type="number"
                       value={formData.salesPrice}
-                      onChange={(e) => handleInputChange(e, 'salesPrice')}
-                      onWheel={(e) => e.target.blur()}
-                      min="0"
-                      step="0.01"
-                      className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                      placeholder="0.00"
+                      name="salesPrice"
+                      onChange={handleOnChange}
+                      className={`w-full border ${errors.salesPrice ? 'border-red-500' : 'border-sky-200'} p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent`}
+                      placeholder="Enter sales price"
                     />
                     {errors.salesPrice && <p className="text-red-500 text-sm">{errors.salesPrice}</p>}
                   </div>
@@ -260,13 +326,11 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     <label className="text-sky-900 font-medium">MRP</label>
                     <input
                       type="number"
+                      name="mrp"
                       value={formData.mrp}
-                      onChange={(e) => handleInputChange(e, 'mrp')}
-                      onWheel={(e) => e.target.blur()}
-                      min="0"
-                      step="0.01"
-                      className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                      placeholder="0.00"
+                      onChange={handleOnChange}
+                      className={`w-full border ${errors.mrp ? 'border-red-500' : 'border-sky-200'} p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent`}
+                      placeholder="Enter MRP"
                     />
                     {errors.mrp && <p className="text-red-500 text-sm">{errors.mrp}</p>}
                   </div>
@@ -276,25 +340,21 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     <input
                       type="number"
                       value={formData.packageSize}
-                      onChange={(e) => handleInputChange(e, 'packageSize')}
-                      onWheel={(e) => e.target.blur()}
-                      min="0"
-                      step="0.001"
-                      className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                      placeholder="0.000"
+                      name="packageSize"
+                      onChange={handleOnChange}
+                      className={`w-full border ${errors.packageSize ? 'border-red-500' : 'border-sky-200'} p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent`}
+                      placeholder="Enter package size"
                     />
                     {errors.packageSize && <p className="text-red-500 text-sm">{errors.packageSize}</p>}
                   </div>
                 </div>
-
-
                 <div className="space-y-2">
                   <label className="text-sky-900 font-medium">Images</label>
-                  <div className="border-2 border-dashed border-sky-200 rounded-xl p-6">
+                  <div className={`border-2 border-dashed ${errors.images ? 'border-red-500' : 'border-sky-200'} rounded-xl p-6`}>
                     <input
                       type="file"
                       multiple
-                      accept=".png,.jpg,.jpeg,.webp"
+                      accept=".png,.jpeg,.webp"
                       onChange={handleImageUpload}
                       className="hidden"
                       id="image-upload"
@@ -307,27 +367,27 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                       <span className="text-sky-900">Click to upload images</span>
                       <span className="text-sky-500 text-sm">or drag and drop them here</span>
                       <span className="text-sky-400 text-sm">
-                        {selectedFiles.length}/10 images selected
+                        {formData.images.length}/3 images selected
                       </span>
                       <span className="text-sky-400 text-sm">
-                        Allowed formats: PNG, JPEG, JPG, WEBP
+                        Allowed formats: PNG, JPEG, WEBP
                       </span>
                     </label>
                   </div>
-
-                  {previewUrls.length > 0 && (
+                  {errors.images && <p className="text-red-500 text-sm">{errors.images}</p>}
+                  {formData.images.length > 0 && (
                     <div className="grid grid-cols-5 gap-4 mt-4">
-                      {previewUrls.map((url, index) => (
-                        <div key={url} className="relative group">
+                      {formData.images.map((url, index) => (
+                        <div key={index} className="relative group">
                           <img
                             src={url}
-                            alt={`Preview ${index + 1}`}
+                            alt={`Image ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg"
                           />
                           <button
                             type="button"
                             onClick={() => removeImage(index)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -335,108 +395,110 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                       ))}
                     </div>
                   )}
-                  {errors.images && <p className="text-red-500 text-sm">{errors.images}</p>}
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sky-900 font-medium">Category</label>
-                  <select
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                  >
-                    <option value="">Select Category</option>
-                    {category.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.categoryId && <p className="text-red-500 text-sm">{errors.categoryId}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sky-900 font-medium">Tags</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 text-sky-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      value={tagSearch}
-                      onChange={(e) => setTagSearch(e.target.value)}
-                      placeholder="Search tags"
-                      className="w-full border border-sky-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  {filteredTags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {filteredTags.map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => handleTagAdd(t.name)}
-                          className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full hover:bg-sky-200 transition-colors"
-                        >
-                          {t.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-2">
-                    {formData.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-sky-50 text-sky-700 px-3 py-1 rounded-full flex items-center gap-1"
-                      >
-                        <Tag className="w-4 h-4" />
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => handleTagRemove(tag)}
-                          className="text-sky-500 hover:text-sky-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  {errors.tags && <p className="text-red-500 text-sm">{errors.tags}</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Stock Field */}
-                  <div className="space-y-2">
-                    <label className="text-sky-900 font-medium">Stock</label>
-                    <input
-                      type="number"
-                      value={formData.stock}
-                      onChange={(e) => handleInputChange(e, 'stock')}
-                      onWheel={(e) => e.target.blur()}
-                      min="0"
-                      step="1"
-                      className="w-full border border-sky-200 p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                      placeholder="0"
-                    />
-                    {errors.stock && <p className="text-red-500 text-sm">{errors.stock}</p>}
-                  </div>
-
-                  {/* Sell Field */}
-                  <div className="space-y-2">
-                    <label className="text-sky-900 font-medium">Sell</label>
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={formData.sell}
-                        onChange={(e) => setFormData({ ...formData, sell: e.target.checked })}
-                        className="w-5 h-5 text-sky-500 focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                      />
-                      <span className="text-gray-700">Enable for sale</span>
-                    </div>
-                    {errors.sell && <p className="text-red-500 text-sm">{errors.sell}</p>}
-                  </div>
-                </div>
-
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sky-900 font-medium">Category</label>
+                <select
+                  value={formData.categoryName}
+                  name="categoryName"
+                  onChange={handleOnChange}
+                  className={`w-full border ${errors.categoryName ? 'border-red-500' : 'border-sky-200'} p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent`}
+                >
+                  <option value="">Select Category</option>
+                  {category.map((cat) => (
+                    <option key={cat.name} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.categoryName && <p className="text-red-500 text-sm">{errors.categoryName}</p>}
+              </div>
+
+
+              {/* Tags Field */}
+              <div className="space-y-2">
+                <label className="text-sky-900 font-medium">Tags</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 text-sky-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={tagSearch}
+                    onChange={(e) => setTagSearch(e.target.value)}
+                    placeholder="Search tags"
+                    className="w-full border border-sky-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  />
+                </div>
+
+                {filteredTags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {filteredTags.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => handleTagAdd(t.name)}
+                        className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full hover:bg-sky-200 transition-colors"
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-sky-50 text-sky-700 px-3 py-1 rounded-full flex items-center gap-1"
+                    >
+                      <Tag className="w-4 h-4" />
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleTagRemove(tag)}
+                        className="text-sky-500 hover:text-sky-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                {errors.tags && <p className="text-red-500 text-sm">{errors.tags}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                {/* Stock Field */}
+                <div className="space-y-2">
+                  <label className="text-sky-900 font-medium">Stock</label>
+                  <input
+                    type="number"
+                    value={formData.stock}
+                    name="stock"
+                    onChange={handleOnChange}
+                    min="0"
+                    className={`w-full border ${errors.stock ? 'border-red-500' : 'border-sky-200'} p-3 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent`}
+                    placeholder="Enter stock quantity"
+                  />
+                  {errors.stock && <p className="text-red-500 text-sm">{errors.stock}</p>}
+                </div>
+
+                {/* Sell Field */}
+                <div className="space-y-2">
+                  <label className="text-sky-900 font-medium">Sell</label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={formData.sell}
+                      onChange={(e) => setFormData({ ...formData, sell: e.target.checked })}
+                      className="w-5 h-5 text-sky-500 focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                    />
+                    <span className="text-gray-700">Enable for sale</span>
+                  </div>
+                  {/* {errors.sell && <p className="text-red-500 text-sm">{errors.sell}</p>} */}
+                </div>
+              </div>
+
+
             </div>
 
             {/* Footer */}

@@ -78,10 +78,9 @@ export function login(emaill, password, navigate) {
             localStorage.setItem("token", response.data.token);
             localStorage.setItem("data", response.data.verifyData);  // Make sure to store it as a JSON string
             
-if(localStorage.getItem('token')){
 
     navigate("/");  // Redirect to home or another page
-}
+
         } catch (error) {
             console.log("LOGIN API ERROR............", error);
             toast.error("Login Failed");

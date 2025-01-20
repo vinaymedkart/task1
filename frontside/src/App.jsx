@@ -15,7 +15,7 @@ import CustomerDetails from './pages/CustomerDetails.jsx';
 
 function App() {
   const { token } = useSelector((state) => state.auth);
-
+  
   return (
     <>
       <Navbar />
