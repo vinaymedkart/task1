@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../services/middlewares/auth';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
+
+
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   });
-
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
+  const {token} = useSelector((state)=>state.auth)
+ 
   const { email, password } = formData;
   const [showPassword, setShowPassword] = useState(false);
 

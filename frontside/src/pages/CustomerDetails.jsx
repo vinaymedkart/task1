@@ -39,10 +39,13 @@ const CustomerDetails = () => {
         setRefreshing(false);
     };
 
-    const handleStatusUpdate = (updatedOrder) => {
-        setPendingOrders(prevOrders => 
-            prevOrders.filter(order => order.orderId !== updatedOrder.orderId)
-        );
+    const handleStatusUpdate = async (updatedOrder) => {
+        // If the update was successful and there's no insufficient stock issue
+        if (updatedOrder.success && !updatedOrder.insufficientStockProducts) {
+            setPendingOrders(prevOrders => 
+                prevOrders.filter(order => order.orderId !== updatedOrder.data.orderId)
+            );
+        }
     };
 
     if (loading) {

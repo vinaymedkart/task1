@@ -494,7 +494,7 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     />
                     <span className="text-gray-700">Enable for sale</span>
                   </div>
-                  {/* {errors.sell && <p className="text-red-500 text-sm">{errors.sell}</p>} */}
+                  {errors.sell && <p className="text-red-500 text-sm">{errors.sell}</p>}
                 </div>
               </div>
 

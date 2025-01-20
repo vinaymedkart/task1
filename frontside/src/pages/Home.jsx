@@ -5,11 +5,14 @@ import { useSelector } from "react-redux";
 import Admin from "../components/core/PrivateRoutes/Admin.jsx";
 import { useDispatch } from 'react-redux';
 import ProductList from "../components/common/ProductList.jsx";
+import { getAllTags } from "../services/middlewares/tag.jsx";
+import { getAllCategorys } from "../services/middlewares/category.jsx";
 
 const Home = () => {
   const { data, token } = useSelector((state) => state.auth);
   const { tag } = useSelector((state) => state.appdata);
   const dispatch = useDispatch();
+ 
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-b from-sky-50 to-white">

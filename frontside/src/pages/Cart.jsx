@@ -59,6 +59,7 @@ const Cart = () => {
             const newQty = currentQty + change;
 
             if (newQty <= 0) {
+                dispatch(removeItem(wsCode))
                 delete cartData[userEmail][wsCode];
             } else {
                 cartData[userEmail][wsCode] = newQty;
@@ -96,12 +97,15 @@ const Cart = () => {
                     localStorage.setItem("usersData", JSON.stringify(cartData));
                 }
     
-                // Update local state
+                // Update local state immediately
                 setCartItems(prevItems => prevItems.filter(item => item.wsCode !== wsCode));
+                
+                // Optionally refresh the cart to ensure consistency
+                await fetchCartItems();
             }
         } catch (error) {
             console.error('Error removing item:', error);
-            // Optionally refresh the entire cart to ensure consistency
+            // Refresh cart to ensure consistency with backend
             await fetchCartItems();
         }
     };    

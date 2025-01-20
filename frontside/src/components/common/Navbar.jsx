@@ -15,14 +15,7 @@ const Navbar = () => {
   const { token } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  useEffect(() => {
-    if (token) {
-      console.log("Navbar")
-      dispatch(getAllTags(token));
-      dispatch(getAllCategorys(token));
-     
-    }
-  }, []);
+  
 
   const logout = () => {
     dispatch(setSignupData(null));

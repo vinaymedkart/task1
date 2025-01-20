@@ -5,6 +5,8 @@ import dotenv from "dotenv"; dotenv.config();
 
 import User  from "../models/User.js";
 import Cart from "../models/Cart.js";
+import Tag from "../models/Tags.js";
+import Category from "../models/Category.js";
 
 
 export const signup = async(req,res)=>{
@@ -128,11 +130,29 @@ export const login = async (req, res) => {
 				expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
 				httpOnly: true,
 			};
+			const tags = await Tag.findAll({
+				order: [['name', 'ASC']]    
+			});
+	
+			if (tags.length === 0) {
+				return res.status(404).json({ success: true, message: 'No tags found' });
+			}
+			const categorys = await Category.findAll({
+				order: [['name', 'ASC']]
+			});
+			
+			if (categorys.length === 0) {
+				return res.status(404).json({ success: true, message: 'No categories found' });
+			}
+	
+			
 			res.cookie("token", token, options).status(200).json({
 				success: true,
 				token,
 				verifyData,
 				message: `User Login Success`,
+				tags,
+				categorys
 			});
 		} else {
 			return res.status(401).json({

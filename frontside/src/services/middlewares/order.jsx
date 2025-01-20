@@ -64,7 +64,6 @@ export function historyOrders(token) {
         }
     }
 }
-
 export function updateOrderStatus(orderId, status, token) {
     return async (dispatch) => {
         const toastId = toast.loading("Updating order status...");
@@ -73,30 +72,43 @@ export function updateOrderStatus(orderId, status, token) {
             const response = await apiConnector(
                 "PUT",
                 UPDATE_ORDER_STATUS_API,
-                { status,orderId },
+                { status, orderId },
                 {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 }
             );
 
-            if (!response.data.success) {
-                throw new Error(response.data.message);
-            }
-
             toast.success("Order status updated successfully");
-            return response.data;
+            return {
+                success: true,
+                data: response.data.data
+            };
 
         } catch (error) {
             console.log("ERROR in updating order status:", error);
-            toast.error(error.message || "Failed to update order status");
-            return false;
+            
+            // Check if this is an insufficient stock error
+            if (error.response?.status === 400 && 
+                error.response?.data?.insufficientStockProducts) {
+                toast.error("Insufficient stock for some products");
+                return {
+                    success: false,
+                    insufficientStockProducts: error.response.data.insufficientStockProducts
+                };
+            }
+
+            // Handle other errors
+            toast.error(error.response?.data?.message || "Failed to update order status");
+            return { success: false };
         } finally {
             dispatch(setLoading(false));
             toast.dismiss(toastId);
         }
     };
 }
+
+
 
 export function allOrders(token) {
     return async (dispatch) => {

@@ -1,4 +1,4 @@
-import {Cart,Order,CartItem ,Product, User} from '../models/index.js';
+import {Cart,Order,CartItem ,Product, User,sequelize,Inventory} from '../models/index.js';
 import { Op,Sequelize } from 'sequelize';
 
 export const placeOrder = async (req, res) => {
@@ -198,12 +198,64 @@ export const getOrderHistory = async (req, res) => {
 };
 
 
-export const updateOrderStatus = async (req, res) => {
-    try {
-        const { orderId } = req.body;
-        const { status } = req.body;
+// export const updateOrderStatus = async (req, res) => {
+//     try {
+//         const { orderId } = req.body;
+//         const { status } = req.body;
 
         
+//         if (!['Confirmed', 'Cancelled'].includes(status)) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Invalid status. Must be 'Confirmed' or 'Cancelled'"
+//             });
+//         }
+
+//         const order = await Order.findByPk(orderId);
+
+//         if (!order) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Order not found"
+//             });
+//         }
+
+//         // Only allow updating Pending orders
+//         if (order.status !== "Pending") {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Can only update pending orders"
+//             });
+//         }
+
+//         // Update the order status
+//         await order.update({ status });
+
+//         return res.status(200).json({
+//             success: true,
+//             message: `Order ${orderId} status updated to ${status}`,
+//             data: {
+//                 orderId: order.id,
+//                 status: order.status,
+//                 updatedAt: order.updatedAt
+//             }
+//         });
+
+//     } catch (error) {
+//         console.error("Error in updateOrderStatus:", error);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Failed to update order status",
+//             error: error.message
+//         });
+//     }
+// }
+export const updateOrderStatus = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    
+    try {
+        const { orderId, status } = req.body;
+
         if (!['Confirmed', 'Cancelled'].includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -211,7 +263,15 @@ export const updateOrderStatus = async (req, res) => {
             });
         }
 
-        const order = await Order.findByPk(orderId);
+        const order = await Order.findByPk(orderId, {
+            include: [{
+                model: Cart,
+                include: [{
+                    model: CartItem,
+                    as: 'items'
+                }]
+            }]
+        });
 
         if (!order) {
             return res.status(404).json({
@@ -228,8 +288,62 @@ export const updateOrderStatus = async (req, res) => {
             });
         }
 
+        if (status === 'Confirmed') {
+            // Get all cart items for this order
+            const cartItems = order.Cart.items;
+            
+            // Check inventory for all products
+            const inventoryChecks = await Promise.all(
+                cartItems.map(async (item) => {
+                    const inventory = await Inventory.findOne({
+                        where: { wsCode: item.productId }
+                    });
+                    
+                    return {
+                        wsCode: item.productId,
+                        requestedQuantity: item.quantity,
+                        availableStock: inventory ? inventory.stock : 0,
+                        hasStock: inventory && inventory.stock >= item.quantity
+                    };
+                })
+            );
+
+            // Check if any products have insufficient stock
+            const insufficientStock = inventoryChecks.filter(item => !item.hasStock);
+
+            if (insufficientStock.length > 0) {
+                await transaction.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: "Insufficient stock for some products",
+                    insufficientStockProducts: insufficientStock.map(item => ({
+                        wsCode: item.wsCode,
+                        requested: item.requestedQuantity,
+                        available: item.availableStock
+                    }))
+                });
+            }
+
+            // Update inventory for all products
+            await Promise.all(
+                cartItems.map(async (item) => {
+                    await Inventory.decrement(
+                        'stock',
+                        {
+                            by: item.quantity,
+                            where: { wsCode: item.productId },
+                            transaction
+                        }
+                    );
+                })
+            );
+        }
+
         // Update the order status
-        await order.update({ status });
+        await order.update({ status }, { transaction });
+        
+        // Commit the transaction
+        await transaction.commit();
 
         return res.status(200).json({
             success: true,
@@ -242,6 +356,7 @@ export const updateOrderStatus = async (req, res) => {
         });
 
     } catch (error) {
+        await transaction.rollback();
         console.error("Error in updateOrderStatus:", error);
         return res.status(500).json({
             success: false,
@@ -249,7 +364,8 @@ export const updateOrderStatus = async (req, res) => {
             error: error.message
         });
     }
-}
+};
+
 
 export const getAllPendingOrders = async (req, res) => {
     try {
@@ -267,7 +383,7 @@ export const getAllPendingOrders = async (req, res) => {
                         required: true, 
                         include: [{
                             model: Product,
-                            required: true, // This ensures Product exists
+                            required: true, 
                             attributes: ['name', 'wsCode', 'salesPrice']
                         }]
                     }]

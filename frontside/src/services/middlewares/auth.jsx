@@ -5,6 +5,9 @@ import  {apiConnector}  from "../apiconnector"
 import { AuthEndpoints } from "../apis"
 import bcrypt from 'bcryptjs';
 import { jwtDecode } from 'jwt-decode';
+import { getAllCategorys } from "./category";
+import { getAllTags } from "./tag";
+import { setCategory, setTag } from "../../redux/slices/appdata";
 const {
     SIGNUP_API,
     LOGIN_API,
@@ -77,9 +80,10 @@ export function login(emaill, password, navigate) {
             localStorage.setItem("email", email);
             localStorage.setItem("token", response.data.token);
             localStorage.setItem("data", response.data.verifyData);  // Make sure to store it as a JSON string
-            
+            dispatch(setTag(response.data.tags))
+            dispatch(setCategory(response.data.categorys))
 
-    navigate("/");  // Redirect to home or another page
+    navigate("/");  
 
         } catch (error) {
             console.log("LOGIN API ERROR............", error);

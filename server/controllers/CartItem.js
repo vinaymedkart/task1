@@ -30,9 +30,9 @@ export const addCartItem = async (req, res) => {
                 }
 
                 const [cartItem, created] = await CartItem.findOrCreate({
-                    where: { 
-                        cartId: cart.id, 
-                        productId: product.wsCode 
+                    where: {
+                        cartId: cart.id,
+                        productId: product.wsCode
                     },
                     defaults: {
                         cartId: cart.id,
@@ -123,7 +123,6 @@ export const getCartItems = async (req, res) => {
         });
     }
 };
-
 export const updateCartItem = async (req, res) => {
     try {
         const { productId, quantity } = req.body;
@@ -141,9 +140,9 @@ export const updateCartItem = async (req, res) => {
         }
 
         const cartItem = await CartItem.findOne({
-            where: { 
-                cartId: cart.id, 
-                productId // This should match the wsCode from Product
+            where: {
+                cartId: cart.id,
+                productId
             }
         });
 
@@ -154,10 +153,29 @@ export const updateCartItem = async (req, res) => {
             });
         }
 
-        if (quantity <= 0) {
+        // If quantity is 0 or negative, remove the item
+        // console.log(
+        //     "coming"
+        // )
+        // console.log(updatedCart)
+        if (quantity <= 1) {
             await cartItem.destroy();
+
+            // Fetch updated cart after removal
+            const updatedCart = await Cart.findOne({
+                where: { id: cart.id },
+                include: [{
+                    model: CartItem,
+                    as: 'items',
+                    include: [{
+                        model: Product,
+                        attributes: ['wsCode', 'name', 'salesPrice', 'mrp', 'packageSize', 'images']
+                    }]
+                }]
+            });
             return res.status(200).json({
                 success: true,
+                cart: updatedCart,
                 message: "Cart item removed successfully"
             });
         }
@@ -183,7 +201,6 @@ export const updateCartItem = async (req, res) => {
             cart: updatedCart,
             message: "Cart item updated successfully"
         });
-
     } catch (error) {
         console.error("Error updating cart item:", error);
         return res.status(500).json({
@@ -210,8 +227,8 @@ export const removeCartItem = async (req, res) => {
         }
 
         const result = await CartItem.destroy({
-            where: { 
-                cartId: cart.id, 
+            where: {
+                cartId: cart.id,
                 productId // This should match the wsCode from Product
             }
         });
