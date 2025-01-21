@@ -4,7 +4,7 @@ import { setLoading } from "../../redux/slices/auth"
 
 import { apiConnector } from "../apiconnector"
 import { ProductEndpoints } from "../apis"
-import { addProduct, setProducts, updateProduct ,delProduct} from "../../redux/slices/appdata"
+import { addProduct, setProducts, updateProduct ,delProduct, setTag, setCategory} from "../../redux/slices/appdata"
 
 const {
   CREATE_PRODUCT_API,
@@ -118,6 +118,9 @@ export function getAllProducts(token, page = 1, query = {}) {
           totalPages: response.data.totalPages,
         })
       );
+      dispatch(setTag(response.data.tags));
+      dispatch(setCategory(response.data.categorys));
+      
     } catch (error) {
       console.error("GET ALL PRODUCTS ERROR............", error);
       toast.error(error.message || "Failed to fetch products.");

@@ -153,7 +153,7 @@ const ProductFilters = ({ onFilterChange }) => {
                     <div className="relative">
                         <button
                             onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            className="px-4 py-2 border border-gray-300  rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-500"
                         >
                             Categories ({selectedCategories.length})
                         </button>

@@ -18,7 +18,7 @@ function Feature() {
     
     const dispatch = useDispatch();
     const { token } = useSelector((state) => state.auth);
-    const { tags, categories } = useSelector((state) => state.appdata);
+    const { tag, category } = useSelector((state) => state.appdata);
 
     const handleSubmit = (data) => {
         if (openModal.type === "Product") {
@@ -118,7 +118,7 @@ function Feature() {
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {tags?.map((tag) => (
                             <div 
                                 key={tag.id} 
@@ -137,7 +137,7 @@ function Feature() {
                                 </button>
                             </div>
                         ))}
-                    </div>
+                    </div> */}
                 </div>
             </div>
 

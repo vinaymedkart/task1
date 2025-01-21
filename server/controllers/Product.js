@@ -7,15 +7,11 @@ export const viewDetails = async (req, res) => {
    
 }
 
-
-
-
-
 export const createProduct = async (req, res) => {
     try {
-        const { name, salesPrice, mrp, packageSize, tags, categoryName, sell=false, stock, images } = req.body;
+        const { name, salesPrice, mrp, packageSize, tags, categoryName, sell, stock, images } = req.body;
         
-        // if(sell)sell=false
+        
         if (!name || !salesPrice || !mrp || !packageSize || !tags || !categoryName || !stock || !sell || !images) {
             return res.status(400).json({ message: "All fields are required" });
         }
@@ -81,6 +77,7 @@ export const createProduct = async (req, res) => {
 
 export const getAllProducts = async (req, res) => {
     try {
+        // const user=
         const page = parseInt(req.query.page || 1, 10);
         const limit = 6;
         const offset = (page - 1) * limit;
@@ -197,6 +194,22 @@ export const getAllProducts = async (req, res) => {
             tags: product.Tags?.map((tag) => tag.name) || [],
         }));
 
+        const allTags = await Tag.findAll({
+            order: [['name', 'ASC']]    
+        });
+
+        if (allTags.length === 0) {
+            return res.status(404).json({ success: true, message: 'No tags found' });
+        }
+
+        const allCategorys = await Category.findAll({
+            order: [['name', 'ASC']]    
+        });
+
+        if (allCategorys.length === 0) {
+            return res.status(404).json({ success: true, message: 'No Categorys found' });
+        }
+
         return res.status(200).json({
             success: true,
             products: formattedProducts,
@@ -204,6 +217,8 @@ export const getAllProducts = async (req, res) => {
             totalPages: Math.ceil(totalProducts / limit),
             currentPage: page,
             message: "Products retrieved successfully.",
+            tags:allTags,
+            categorys:allCategorys
         });
     } catch (error) {
         console.error("Error fetching products:", error);
@@ -339,10 +354,14 @@ export const updateProduct = async (req, res) => {
             wsCode: updatedProduct.wsCode
         };
 
+        
+        
+
         return res.status(200).json({
             success: true,
             message: "Product updated successfully",
-            product: formattedResponse
+            product: formattedResponse,
+            
         });
 
     } catch (error) {

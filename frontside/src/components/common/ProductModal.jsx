@@ -102,12 +102,17 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
         return '';
     }
   };
-
   const handleOnChange = (e) => {
-    const { name, value } = e.target;
+    const { name, type, value, checked } = e.target;
+    
+    // Use checked for checkbox, value for other inputs
+    const inputValue = type === 'checkbox' ? checked : value;
+    
+    console.log(name + " " + inputValue);
+    
     const newFormData = {
       ...formData,
-      [name]: value,
+      [name]: inputValue,
     };
     
     setFormData(newFormData);
@@ -122,13 +127,15 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
         mrp: mrpError,
       }));
     } else {
-      const error = validateField(name, value, newFormData);
+      const error = validateField(name, inputValue, newFormData);
       setErrors(prev => ({
         ...prev,
         [name]: error,
       }));
     }
-  };
+};
+
+
   const uploadImages = async (files) => {
     const urls = [];
     const allowedExtensions = ['png', 'jpeg', 'webp'];
@@ -489,7 +496,8 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                     <input
                       type="checkbox"
                       checked={formData.sell}
-                      onChange={(e) => setFormData({ ...formData, sell: e.target.checked })}
+                      name="sell"
+                      onChange={handleOnChange}
                       className="w-5 h-5 text-sky-500 focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                     />
                     <span className="text-gray-700">Enable for sale</span>
